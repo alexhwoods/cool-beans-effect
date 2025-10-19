@@ -1,4 +1,4 @@
-import { HttpRouter } from "@effect/platform";
+import { HttpMiddleware, HttpRouter } from "@effect/platform";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 import { RpcSerialization, RpcServer } from "@effect/rpc";
 import { Layer } from "effect";
@@ -12,7 +12,11 @@ const HttpProtocol = RpcServer.layerProtocolHttp({
   path: "/rpc",
 }).pipe(Layer.provide(RpcSerialization.layerNdjson));
 
-const Main = HttpRouter.Default.serve().pipe(
+const corsMiddleware = HttpMiddleware.cors({
+  allowedOrigins: ["http://localhost:3000"],
+});
+
+const Main = HttpRouter.Default.serve(corsMiddleware).pipe(
   Layer.provide(RpcLayer),
   Layer.provide(HttpProtocol),
   Layer.provide(BunHttpServer.layer({ port: 8000 }))
