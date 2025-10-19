@@ -1,4 +1,4 @@
-import { HttpMiddleware, HttpRouter } from "@effect/platform";
+import { HttpRouter } from "@effect/platform";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 import { RpcSerialization, RpcServer } from "@effect/rpc";
 import { Layer } from "effect";
