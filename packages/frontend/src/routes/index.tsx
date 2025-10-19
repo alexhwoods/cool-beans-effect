@@ -26,7 +26,10 @@ function App() {
     try {
       setLoading(true)
       const data = await listUsers()
+
+      console.log('data: ', data)
       setUsers(data)
+      setLoading(false)
     } catch (error) {
       console.error('Failed to load users:', error)
     }
