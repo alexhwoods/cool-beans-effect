@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "bun-types": "latest"
+  },
+  "dependencies": {
+    "@effect/rpc": ""
   }
 }

@@ -1,34 +1,28 @@
-import { Effect, RequestResolver } from "effect"
-import { GetUser, CreateUser, ListUsers } from "@collector/shared"
-import type { User } from "@collector/shared"
+import { Effect, Layer, Schema, Stream } from "effect";
+import { Rpc, RpcGroup } from "@effect/rpc";
+import { GetUser, CreateUser, ListUsers } from "@collector/shared";
 
-// In-memory user store
-const users = new Map<string, User>()
+// Define a user with an ID and name
+export class User extends Schema.Class<User>("User")({
+  id: Schema.String, // User's ID as a string
+  name: Schema.String, // User's name as a string
+}) {}
 
-// Seed some initial data
-users.set("1", { id: "1", name: "Alice", email: "alice@example.com" })
-users.set("2", { id: "2", name: "Bob", email: "bob@example.com" })
-
-// Create resolvers for each request type
-export const GetUserResolver = RequestResolver.fromEffect((request: GetUser) =>
-  Effect.gen(function* () {
-    const user = users.get(request.id)
-    if (!user) {
-      return yield* Effect.fail(`User with id ${request.id} not found`)
-    }
-    return user
+// Create the RPC router with handlers
+export const UserRpcs = RpcGroup.make(
+  Rpc.make("UserList", {
+    success: User, // Succeed with a stream of users
+    stream: true,
   })
-)
+);
 
-export const CreateUserResolver = RequestResolver.fromEffect((request: CreateUser) =>
+export const UsersLive: Layer.Layer<Rpc.Handler<"UserList">> = UserRpcs.toLayer(
   Effect.gen(function* () {
-    const id = Math.random().toString(36).substring(7)
-    const user: User = { id, name: request.name, email: request.email }
-    users.set(id, user)
-    return user
+    return {
+      UserList: () =>
+        Stream.fromIterable([
+          { id: "1", name: "Alice", email: "alice@example.com" },
+        ]),
+    };
   })
-)
-
-export const ListUsersResolver = RequestResolver.fromEffect((_request: ListUsers) =>
-  Effect.succeed(Array.from(users.values()))
-)
+);

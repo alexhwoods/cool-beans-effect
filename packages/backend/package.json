@@ -10,13 +10,11 @@
   },
   "dependencies": {
     "@collector/shared": "workspace:*",
-    "effect": "^3.10.0",
-    "@effect/rpc": "^0.43.0",
-    "@effect/rpc-http": "^0.42.0",
+    "effect": "^3.18.4",
+    "@effect/rpc": "^0.71.1",
     "@effect/schema": "^0.75.0",
-    "@effect/platform": "^0.67.0",
-    "@effect/platform-node": "^0.62.0",
-    "@effect/platform-bun": "^0.48.0"
+    "@effect/platform": "^0.92.1",
+    "@effect/platform-bun": "^0.81.1"
   },
   "devDependencies": {
     "bun-types": "latest"

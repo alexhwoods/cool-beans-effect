@@ -7,8 +7,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "effect": "^3.10.0",
-    "@effect/rpc": "^0.43.0",
+    "effect": "^3.18.4",
+    "@effect/rpc": "^0.71.1",
     "@effect/schema": "^0.75.0"
   },
   "devDependencies": {
