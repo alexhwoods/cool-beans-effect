@@ -2,11 +2,11 @@ import { HttpRouter } from "@effect/platform";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 import { RpcSerialization, RpcServer } from "@effect/rpc";
 import { Layer } from "effect";
-import { RpcLayer } from "./rpc";
+import { RpcLayerLive } from "./rpc";
 import { corsMiddleware } from "./middleware/cors.middleware";
 
 const Main = HttpRouter.Default.serve(corsMiddleware).pipe(
-  Layer.provide(RpcLayer),
+  Layer.provide(RpcLayerLive),
   Layer.provide(
     RpcServer.layerProtocolHttp({
       path: "/rpc",
