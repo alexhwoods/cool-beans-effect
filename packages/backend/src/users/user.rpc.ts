@@ -1,7 +1,7 @@
 import { Effect, Stream } from "effect";
 import { UserRpcs } from "@collector/shared";
 
-export const UsersLive = UserRpcs.toLayer(
+export const UserRpcLive = UserRpcs.toLayer(
   Effect.gen(function* () {
     return {
       UserList: () =>
