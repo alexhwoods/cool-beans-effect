@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-
+import { useState, useEffect } from 'react'
 import {
   Zap,
   Server,
@@ -7,13 +7,56 @@ import {
   Shield,
   Waves,
   Sparkles,
+  Users,
+  UserPlus,
 } from 'lucide-react'
+import { listUsers, createUser } from '../rpc-client'
+import type { User } from '@collector/shared'
 
 export const Route = createFileRoute('/')({
   component: App,
 })
 
 function App() {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [newUserName, setNewUserName] = useState('')
+  const [newUserEmail, setNewUserEmail] = useState('')
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true)
+      const data = await listUsers()
+      setUsers(data)
+    } catch (error) {
+      console.error('Failed to load users:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newUserName || !newUserEmail) return
+
+    try {
+      setCreating(true)
+      await createUser(newUserName, newUserEmail)
+      setNewUserName('')
+      setNewUserEmail('')
+      await loadUsers()
+    } catch (error) {
+      console.error('Failed to create user:', error)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  useEffect(() => {
+    loadUsers()
+  }, [])
+
   const features = [
     {
       icon: <Zap className="w-12 h-12 text-cyan-400" />,
@@ -72,12 +115,12 @@ function App() {
             </h1>
           </div>
           <p className="text-2xl md:text-3xl text-gray-300 mb-4 font-light">
-            The framework for next generation AI applications
+            With Effect RPC Integration
           </p>
           <p className="text-lg text-gray-400 max-w-3xl mx-auto mb-8">
             Full-stack framework powered by TanStack Router for React and Solid.
             Build modern applications with server functions, streaming, and type
-            safety.
+            safety. Now featuring Effect RPC for type-safe backend communication.
           </p>
           <div className="flex flex-col items-center gap-4">
             <a
@@ -94,6 +137,96 @@ function App() {
                 /src/routes/index.tsx
               </code>
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Effect RPC Demo Section */}
+      <section className="py-16 px-6 max-w-7xl mx-auto">
+        <div className="bg-gradient-to-br from-purple-900/20 to-cyan-900/20 border border-purple-500/30 rounded-2xl p-8 mb-16">
+          <div className="flex items-center gap-3 mb-6">
+            <Users className="w-8 h-8 text-purple-400" />
+            <h2 className="text-3xl font-bold text-white">
+              Effect RPC Live Demo
+            </h2>
+          </div>
+          <p className="text-gray-300 mb-8">
+            This demo showcases type-safe RPC communication between the TanStack
+            Start frontend and an Effect-powered backend. All requests use Effect
+            Schema for validation and type safety.
+          </p>
+
+          {/* Create User Form */}
+          <div className="bg-slate-800/50 rounded-xl p-6 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <UserPlus className="w-6 h-6 text-cyan-400" />
+              <h3 className="text-xl font-semibold text-white">Create New User</h3>
+            </div>
+            <form onSubmit={handleCreateUser} className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  placeholder="Name"
+                  className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500"
+                  required
+                />
+                <input
+                  type="email"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  placeholder="Email"
+                  className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={creating}
+                className="px-6 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-purple-500/50 text-white font-semibold rounded-lg transition-colors"
+              >
+                {creating ? 'Creating...' : 'Create User via RPC'}
+              </button>
+            </form>
+          </div>
+
+          {/* Users List */}
+          <div className="bg-slate-800/50 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-white">Users List</h3>
+              <button
+                onClick={loadUsers}
+                disabled={loading}
+                className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-cyan-500/50 text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                {loading ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+            {loading ? (
+              <p className="text-gray-400">Loading users...</p>
+            ) : users.length === 0 ? (
+              <p className="text-gray-400">No users found.</p>
+            ) : (
+              <div className="space-y-3">
+                {users.map((user) => (
+                  <div
+                    key={user.id}
+                    className="bg-slate-700/50 rounded-lg p-4 border border-slate-600 hover:border-cyan-500/50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-semibold">{user.name}</p>
+                        <p className="text-gray-400 text-sm">{user.email}</p>
+                      </div>
+                      <span className="text-xs text-gray-500 font-mono">
+                        ID: {user.id}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
