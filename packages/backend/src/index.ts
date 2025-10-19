@@ -3,7 +3,8 @@ import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 import { RpcSerialization, RpcServer } from "@effect/rpc";
 import { Layer } from "effect";
 
-import { UserRpcs, UsersLive } from "./router.js";
+import { UsersLive } from "./router.js";
+import { UserRpcs } from "@collector/shared";
 
 const RpcLayer = RpcServer.layer(UserRpcs).pipe(Layer.provide(UsersLive));
 

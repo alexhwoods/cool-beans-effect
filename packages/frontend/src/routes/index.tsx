@@ -1,16 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
-  Zap,
-  Server,
   Route as RouteIcon,
+  Server,
   Shield,
-  Waves,
   Sparkles,
-  Users,
   UserPlus,
+  Users,
+  Waves,
+  Zap,
 } from 'lucide-react'
-import { listUsers, createUser } from '../rpc-client'
+import { Effect } from 'effect'
+import { listUsers } from '../rpc-client'
 import type { User } from '@collector/shared'
 
 export const Route = createFileRoute('/')({
@@ -18,11 +19,8 @@ export const Route = createFileRoute('/')({
 })
 
 function App() {
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<Array<User>>([])
   const [loading, setLoading] = useState(true)
-  const [creating, setCreating] = useState(false)
-  const [newUserName, setNewUserName] = useState('')
-  const [newUserEmail, setNewUserEmail] = useState('')
 
   const loadUsers = async () => {
     try {
@@ -31,25 +29,6 @@ function App() {
       setUsers(data)
     } catch (error) {
       console.error('Failed to load users:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newUserName || !newUserEmail) return
-
-    try {
-      setCreating(true)
-      await createUser(newUserName, newUserEmail)
-      setNewUserName('')
-      setNewUserEmail('')
-      await loadUsers()
-    } catch (error) {
-      console.error('Failed to create user:', error)
-    } finally {
-      setCreating(false)
     }
   }
 
@@ -120,7 +99,8 @@ function App() {
           <p className="text-lg text-gray-400 max-w-3xl mx-auto mb-8">
             Full-stack framework powered by TanStack Router for React and Solid.
             Build modern applications with server functions, streaming, and type
-            safety. Now featuring Effect RPC for type-safe backend communication.
+            safety. Now featuring Effect RPC for type-safe backend
+            communication.
           </p>
           <div className="flex flex-col items-center gap-4">
             <a
@@ -152,43 +132,18 @@ function App() {
           </div>
           <p className="text-gray-300 mb-8">
             This demo showcases type-safe RPC communication between the TanStack
-            Start frontend and an Effect-powered backend. All requests use Effect
-            Schema for validation and type safety.
+            Start frontend and an Effect-powered backend. All requests use
+            Effect Schema for validation and type safety.
           </p>
 
           {/* Create User Form */}
           <div className="bg-slate-800/50 rounded-xl p-6 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <UserPlus className="w-6 h-6 text-cyan-400" />
-              <h3 className="text-xl font-semibold text-white">Create New User</h3>
+              <h3 className="text-xl font-semibold text-white">
+                Create New User
+              </h3>
             </div>
-            <form onSubmit={handleCreateUser} className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  value={newUserName}
-                  onChange={(e) => setNewUserName(e.target.value)}
-                  placeholder="Name"
-                  className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500"
-                  required
-                />
-                <input
-                  type="email"
-                  value={newUserEmail}
-                  onChange={(e) => setNewUserEmail(e.target.value)}
-                  placeholder="Email"
-                  className="px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={creating}
-                className="px-6 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-purple-500/50 text-white font-semibold rounded-lg transition-colors"
-              >
-                {creating ? 'Creating...' : 'Create User via RPC'}
-              </button>
-            </form>
           </div>
 
           {/* Users List */}
