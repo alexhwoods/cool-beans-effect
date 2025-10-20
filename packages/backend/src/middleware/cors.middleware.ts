@@ -1,5 +1,5 @@
 import { HttpMiddleware } from "@effect/platform";
 
 export const corsMiddleware = HttpMiddleware.cors({
-  allowedOrigins: ["http://localhost:3000"],
+  allowedOrigins: ["http://localhost:4000"],
 });
