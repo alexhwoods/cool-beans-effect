@@ -43,7 +43,7 @@ export default function FooIndexPage() {
             <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10 cursor-pointer group">
               <div className="flex items-start justify-between mb-3">
                 <h2 className="text-2xl font-semibold text-white group-hover:text-green-400 transition-colors">
-                  Server Component
+                  Server Component (Collect)
                 </h2>
                 <span className="text-xs text-green-400 bg-green-400/10 px-3 py-1 rounded-full border border-green-400/20">
                   All at Once
@@ -62,6 +62,31 @@ export default function FooIndexPage() {
               </div>
             </div>
           </Link>
+
+          {/* Server Component Realtime Example */}
+          <Link href="/foo/server-component-realtime">
+            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 cursor-pointer group">
+              <div className="flex items-start justify-between mb-3">
+                <h2 className="text-2xl font-semibold text-white group-hover:text-purple-400 transition-colors">
+                  Server Component (Streaming)
+                </h2>
+                <span className="text-xs text-purple-400 bg-purple-400/10 px-3 py-1 rounded-full border border-purple-400/20">
+                  Server Streaming
+                </span>
+              </div>
+              <p className="text-gray-400 mb-4">
+                Server component with async generator that streams from an API route using{" "}
+                <code className="text-purple-400 bg-slate-900/50 px-2 py-0.5 rounded">ReadableStream</code>.
+                Items render progressively on the server.
+              </p>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+                <span>Server-side progressive rendering via API</span>
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* Info Box */}
@@ -73,13 +98,17 @@ export default function FooIndexPage() {
             About These Examples
           </h3>
           <p className="text-gray-400 text-sm">
-            Both examples fetch the same data from{" "}
+            All examples fetch the same data from{" "}
             <code className="text-purple-400 bg-slate-900/50 px-2 py-0.5 rounded">
               http://localhost:8000/rpc
             </code>{" "}
-            using Effect RPC. The difference is in how they render the results:
-            progressively (client) or all at once (server).
+            using Effect RPC. The key differences are:
           </p>
+          <ul className="text-gray-400 text-sm mt-2 space-y-1 ml-4">
+            <li>• <strong>Client Component:</strong> Streams directly from browser to backend</li>
+            <li>• <strong>Server Collect:</strong> Server waits for all data before rendering</li>
+            <li>• <strong>Server Streaming:</strong> Server streams via API route with progressive rendering</li>
+          </ul>
         </div>
       </div>
     </div>
