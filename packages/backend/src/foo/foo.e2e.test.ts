@@ -22,11 +22,7 @@ describe("Foo RPC E2E", () => {
       return yield* Stream.runCollect(client.streamFoo()).pipe(
         Effect.map((foos) => Array.from(foos))
       );
-    }).pipe(
-      Effect.scoped,
-      Effect.provide(ProtocolLive),
-      Effect.runPromise
-    );
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
 
     // Verify we got the expected foo items from the service
     expect(result).toHaveLength(4);
@@ -63,14 +59,28 @@ describe("Foo RPC E2E", () => {
       );
 
       return items;
-    }).pipe(
-      Effect.scoped,
-      Effect.provide(ProtocolLive),
-      Effect.runPromise
-    );
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
 
     // Verify all items were streamed
     expect(result).toHaveLength(4);
-    expect(result.every((item) => item.id && item.name && item.description)).toBe(true);
+    expect(
+      result.every((item) => item.id && item.name && item.description)
+    ).toBe(true);
+  });
+
+  test.only("streamFoo should log items as they stream in", async () => {
+    const logs: string[] = [];
+
+    await Effect.gen(function* () {
+      const client = yield* RpcClient.make(AllRpcs);
+
+      // Stream items and log each one as it arrives
+      yield* Stream.runForEach(client.streamFoo(), (foo) =>
+        Effect.sync(() => {
+          const message = `Received foo: ${foo.name} (id: ${foo.id})`;
+          console.log(message);
+        })
+      );
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
   });
 });
