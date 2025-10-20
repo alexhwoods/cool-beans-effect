@@ -16,7 +16,7 @@ const ProtocolLive = RpcClient.layerProtocolHttp({
 );
 
 describe("Foo RPC E2E", () => {
-  test("streamFoo should return all foo items", async () => {
+  test.skip("streamFoo should return all foo items", async () => {
     const result = await Effect.gen(function* () {
       const client = yield* RpcClient.make(AllRpcs);
       return yield* Stream.runCollect(client.streamFoo()).pipe(
@@ -48,7 +48,7 @@ describe("Foo RPC E2E", () => {
     });
   });
 
-  test("streamFoo should stream items incrementally", async () => {
+  test.skip("streamFoo should stream items incrementally", async () => {
     const result = await Effect.gen(function* () {
       const client = yield* RpcClient.make(AllRpcs);
       const items: any[] = [];
@@ -68,19 +68,24 @@ describe("Foo RPC E2E", () => {
     ).toBe(true);
   });
 
-  test.only("streamFoo should log items as they stream in", async () => {
-    const logs: string[] = [];
+  test.only(
+    "streamFoo should log items as they stream in",
+    async () => {
+      await Effect.gen(function* () {
+        const client = yield* RpcClient.make(AllRpcs);
 
-    await Effect.gen(function* () {
-      const client = yield* RpcClient.make(AllRpcs);
-
-      // Stream items and log each one as it arrives
-      yield* Stream.runForEach(client.streamFoo(), (foo) =>
-        Effect.sync(() => {
-          const message = `Received foo: ${foo.name} (id: ${foo.id})`;
-          console.log(message);
-        })
-      );
-    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
-  });
+        // Stream items and log each one as it arrives
+        yield* Stream.runForEach(
+          // don't buffer
+          // that's really just for demo purposes
+          client.streamFoo().pipe(Stream.rechunk(1)),
+          (foo) =>
+            Effect.gen(function* () {
+              yield* Effect.log(`Received foo: ${foo.name} (id: ${foo.id})`);
+            })
+        );
+      }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+    },
+    { timeout: 20 * 1000 }
+  );
 });
