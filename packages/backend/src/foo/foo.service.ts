@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Stream } from "effect";
+import { Context, Effect, Layer, Random, Stream } from "effect";
 import { Foo } from "@collector/shared";
 
 // Define the FooService as a class with Context.Tag
@@ -22,5 +22,13 @@ export const FooServiceLive = Layer.succeed(FooService, {
       { id: "7", name: "Foo Seven", description: "The seventh foo" },
       { id: "8", name: "Foo Eight", description: "The eighth foo" },
       { id: "9", name: "Foo Nine", description: "The ninth foo" },
-    ]).pipe(Stream.tap(() => Effect.sleep("500 milli"))),
+    ]).pipe(
+      Stream.tap(() =>
+        Effect.gen(function* () {
+          // Add random jitter between 200ms and 2000ms
+          const jitter = yield* Random.nextIntBetween(200, 2000);
+          yield* Effect.sleep(`${jitter} millis`);
+        })
+      )
+    ),
 });
