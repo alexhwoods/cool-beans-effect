@@ -2,7 +2,7 @@ import { describe, test, expect } from "bun:test";
 import { FetchHttpClient } from "@effect/platform";
 import { RpcClient, RpcSerialization } from "@effect/rpc";
 import { Effect, Layer, Stream } from "effect";
-import { FooRpcs } from "@collector/shared";
+import { AllRpcs } from "@collector/shared";
 
 const ProtocolLive = RpcClient.layerProtocolHttp({
   url: "http://localhost:8000/rpc",
@@ -18,7 +18,7 @@ const ProtocolLive = RpcClient.layerProtocolHttp({
 describe("Foo RPC E2E", () => {
   test("streamFoo should return all foo items", async () => {
     const result = await Effect.gen(function* () {
-      const client = yield* RpcClient.make(FooRpcs);
+      const client = yield* RpcClient.make(AllRpcs);
       return yield* Stream.runCollect(client.streamFoo()).pipe(
         Effect.map((foos) => Array.from(foos))
       );
@@ -54,7 +54,7 @@ describe("Foo RPC E2E", () => {
 
   test("streamFoo should stream items incrementally", async () => {
     const result = await Effect.gen(function* () {
-      const client = yield* RpcClient.make(FooRpcs);
+      const client = yield* RpcClient.make(AllRpcs);
       const items: any[] = [];
 
       // Collect items as they stream in

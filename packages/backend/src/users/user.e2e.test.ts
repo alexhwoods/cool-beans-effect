@@ -2,7 +2,7 @@ import { describe, test, expect } from "bun:test";
 import { FetchHttpClient } from "@effect/platform";
 import { RpcClient, RpcSerialization } from "@effect/rpc";
 import { Effect, Layer, Stream } from "effect";
-import { UserRpcs } from "@collector/shared";
+import { AllRpcs } from "@collector/shared";
 
 const ProtocolLive = RpcClient.layerProtocolHttp({
   url: "http://localhost:8000/rpc",
@@ -18,7 +18,7 @@ const ProtocolLive = RpcClient.layerProtocolHttp({
 describe("User RPC E2E", () => {
   test("UserList should return all users", async () => {
     const result = await Effect.gen(function* () {
-      const client = yield* RpcClient.make(UserRpcs);
+      const client = yield* RpcClient.make(AllRpcs);
       return yield* Stream.runCollect(client.UserList()).pipe(
         Effect.map((users) => Array.from(users))
       );
@@ -49,7 +49,7 @@ describe("User RPC E2E", () => {
 
   test("UserList should stream users incrementally", async () => {
     const result = await Effect.gen(function* () {
-      const client = yield* RpcClient.make(UserRpcs);
+      const client = yield* RpcClient.make(AllRpcs);
       const users: any[] = [];
 
       // Collect users as they stream in
@@ -73,7 +73,7 @@ describe("User RPC E2E", () => {
 
   test("UserList should return users with valid email format", async () => {
     const result = await Effect.gen(function* () {
-      const client = yield* RpcClient.make(UserRpcs);
+      const client = yield* RpcClient.make(AllRpcs);
       return yield* Stream.runCollect(client.UserList()).pipe(
         Effect.map((users) => Array.from(users))
       );
