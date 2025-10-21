@@ -1,5 +1,48 @@
 {
-  "files": [],
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "target": "ES2022",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "composite": true,
+    "strict": true,
+    "downlevelIteration": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "incremental": true,
+    "jsx": "preserve",
+    "types": ["bun-types"],
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@collector/shared": ["./packages/shared/src"],
+      "@collector/backend": ["./packages/backend/src"],
+      "@collector/frontend": ["./packages/frontend/src"]
+    }
+  },
+  "include": [
+    "packages/*/src/**/*",
+    "packages/*/next-env.d.ts",
+    "packages/*/.next/types/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "packages/*/node_modules",
+    "packages/*/dist",
+    "packages/*/.next"
+  ],
   "references": [
     { "path": "./packages/shared" },
     { "path": "./packages/frontend" },
