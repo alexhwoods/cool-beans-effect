@@ -6,5 +6,6 @@ export const makeFooRpcHandlers = Effect.gen(function* () {
 
   return {
     streamFoo: () => fooService.getFoos(),
+    getFooResponse: () => fooService.getFooResponse(),
   };
 });

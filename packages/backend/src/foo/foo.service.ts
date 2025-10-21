@@ -1,11 +1,11 @@
 import { Context, Effect, Layer, Random, Stream } from "effect";
 import { Foo } from "@collector/shared";
 
-// Define the FooService as a class with Context.Tag
 export class FooService extends Context.Tag("FooService")<
   FooService,
   {
     readonly getFoos: () => Stream.Stream<Foo>;
+    readonly getFooResponse: () => Stream.Stream<string>;
   }
 >() {}
 
@@ -31,4 +31,23 @@ export const FooServiceLive = Layer.succeed(FooService, {
         })
       )
     ),
+  getFooResponse: () => {
+    const paragraph =
+      "The quick brown fox jumps over the lazy dog. This is a sample paragraph that will be streamed slowly to demonstrate the streaming capabilities of the RPC framework. Each word appears with a small delay to simulate real-time text generation.";
+    const words = paragraph.split(" ");
+
+    return Stream.fromIterable(words).pipe(
+      Stream.tap(() =>
+        Effect.gen(function* () {
+          // Add delay between 50ms and 150ms per word
+          const delay = yield* Random.nextIntBetween(50, 150);
+          yield* Effect.sleep(`${delay} millis`);
+        })
+      ),
+      Stream.mapAccum("", (acc, word) => {
+        const newAcc = acc ? `${acc} ${word}` : word;
+        return [newAcc, newAcc];
+      })
+    );
+  },
 });
