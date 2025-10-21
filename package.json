@@ -11,6 +11,7 @@
     "clean": "bun run --filter '*' clean"
   },
   "devDependencies": {
+    "@effect/language-service": "^0.46.0",
     "bun-types": "latest"
   },
   "dependencies": {

@@ -11,7 +11,12 @@
   "dependencies": {
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.5.6"
+    "next": "15.5.6",
+    "@collector/shared": "workspace:*",
+    "effect": "^3.18.4",
+    "@effect/rpc": "^0.71.1",
+    "@effect/schema": "^0.75.0",
+    "@effect/platform": "^0.92.1"
   },
   "devDependencies": {
     "typescript": "^5",

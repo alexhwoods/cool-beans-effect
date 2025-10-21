@@ -6,6 +6,7 @@ import { Effect, Layer, Stream } from "effect";
 import { AllRpcs } from "@collector/shared";
 import type { Foo } from "@collector/shared";
 import { useEffect, useState } from "react";
+import { HttpClient } from "@effect/platform/HttpClient";
 
 const ProtocolLive = RpcClient.layerProtocolHttp({
   url: "http://localhost:8000/rpc",
@@ -47,7 +48,7 @@ export default function FooPage() {
       )
     );
 
-    Effect.runPromise(program);
+    Effect.runPromise(program.pipe);
   }, []);
 
   return (
