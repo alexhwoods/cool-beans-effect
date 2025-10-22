@@ -2,7 +2,7 @@ import { describe, test, expect } from "bun:test";
 import { FetchHttpClient } from "@effect/platform";
 import { RpcClient, RpcSerialization } from "@effect/rpc";
 import { Effect, Layer, Stream } from "effect";
-import { AllRpcs } from "@collector/shared";
+import { AllRpcs } from "@cool-beans/shared";
 
 const ProtocolLive = RpcClient.layerProtocolHttp({
   url: "http://localhost:8000/rpc",
@@ -22,11 +22,7 @@ describe("User RPC E2E", () => {
       return yield* Stream.runCollect(client.UserList()).pipe(
         Effect.map((users) => Array.from(users))
       );
-    }).pipe(
-      Effect.scoped,
-      Effect.provide(ProtocolLive),
-      Effect.runPromise
-    );
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
 
     // Verify we got the expected users from the service
     expect(result).toHaveLength(3);
@@ -58,11 +54,7 @@ describe("User RPC E2E", () => {
       );
 
       return users;
-    }).pipe(
-      Effect.scoped,
-      Effect.provide(ProtocolLive),
-      Effect.runPromise
-    );
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
 
     // Verify all users were streamed
     expect(result).toHaveLength(3);
@@ -77,11 +69,7 @@ describe("User RPC E2E", () => {
       return yield* Stream.runCollect(client.UserList()).pipe(
         Effect.map((users) => Array.from(users))
       );
-    }).pipe(
-      Effect.scoped,
-      Effect.provide(ProtocolLive),
-      Effect.runPromise
-    );
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
 
     // Verify all emails have valid format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

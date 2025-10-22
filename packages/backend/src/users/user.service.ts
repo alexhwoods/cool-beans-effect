@@ -1,5 +1,5 @@
 import { Context, Layer, Stream } from "effect";
-import { User } from "@collector/shared";
+import { User } from "@cool-beans/shared";
 
 export class UserService extends Context.Tag("UserService")<
   UserService,

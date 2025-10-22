@@ -1,5 +1,5 @@
 import { Context, Effect, Layer, Random, Stream } from "effect";
-import { Foo } from "@collector/shared";
+import { Foo } from "@cool-beans/shared";
 
 export class FooService extends Context.Tag("FooService")<
   FooService,

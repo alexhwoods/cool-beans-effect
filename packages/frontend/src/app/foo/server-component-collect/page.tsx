@@ -1,18 +1,13 @@
 import { FetchHttpClient } from "@effect/platform";
 import { RpcClient, RpcSerialization } from "@effect/rpc";
 import { Effect, Layer, Stream } from "effect";
-import { AllRpcs } from "@collector/shared";
-import type { Foo } from "@collector/shared";
+import { AllRpcs } from "@cool-beans/shared";
+import type { Foo } from "@cool-beans/shared";
 import { Suspense } from "react";
 
 const ProtocolLive = RpcClient.layerProtocolHttp({
   url: "http://localhost:8000/rpc",
-}).pipe(
-  Layer.provide([
-    FetchHttpClient.layer,
-    RpcSerialization.layerNdjson,
-  ])
-);
+}).pipe(Layer.provide([FetchHttpClient.layer, RpcSerialization.layerNdjson]));
 
 async function streamFoos() {
   return Effect.gen(function* () {
@@ -20,11 +15,7 @@ async function streamFoos() {
     return yield* Stream.runCollect(client.streamFoo()).pipe(
       Effect.map((foos) => Array.from(foos))
     );
-  }).pipe(
-    Effect.scoped,
-    Effect.provide(ProtocolLive),
-    Effect.runPromise
-  );
+  }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
 }
 
 async function FooList() {

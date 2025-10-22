@@ -24,7 +24,7 @@ bun install
 ### Run Backend Server
 
 ```bash
-bun run --filter @collector/backend dev
+bun run --filter @cool-beans/backend dev
 ```
 
 The server will start on `http://localhost:8000` with the RPC endpoint at `/rpc`.
@@ -39,7 +39,7 @@ bun run packages/frontend/src/example.ts
 
 ## 📦 Packages
 
-### @collector/shared
+### @cool-beans/shared
 
 Contains shared RPC request/response schemas using `@effect/schema`:
 
@@ -47,7 +47,7 @@ Contains shared RPC request/response schemas using `@effect/schema`:
 - `CreateUser` - Create a new user
 - `ListUsers` - List all users
 
-### @collector/backend
+### @cool-beans/backend
 
 Effect-based HTTP server with RPC handlers using:
 
@@ -60,7 +60,7 @@ Effect-based HTTP server with RPC handlers using:
 - `GET /` - Health check
 - `POST /rpc` - RPC endpoint
 
-### @collector/frontend
+### @cool-beans/frontend
 
 RPC client utilities and examples demonstrating:
 
@@ -75,8 +75,8 @@ RPC client utilities and examples demonstrating:
 bun run dev
 
 # Run specific package
-bun run --filter @collector/backend dev
-bun run --filter @collector/frontend dev
+bun run --filter @cool-beans/backend dev
+bun run --filter @cool-beans/frontend dev
 
 # Build all packages
 bun run build

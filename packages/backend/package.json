@@ -1,5 +1,5 @@
 {
-  "name": "@collector/backend",
+  "name": "@cool-beans/backend",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -11,7 +11,7 @@
     "clean": "rm -rf dist node_modules"
   },
   "dependencies": {
-    "@collector/shared": "workspace:*",
+    "@cool-beans/shared": "workspace:*",
     "@effect/platform": "^0.92.1",
     "@effect/platform-bun": "^0.81.1",
     "@effect/rpc": "^0.71.1",

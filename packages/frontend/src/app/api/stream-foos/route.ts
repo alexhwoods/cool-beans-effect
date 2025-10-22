@@ -1,16 +1,11 @@
 import { FetchHttpClient } from "@effect/platform";
 import { RpcClient, RpcSerialization } from "@effect/rpc";
 import { Effect, Layer, Stream } from "effect";
-import { AllRpcs } from "@collector/shared";
+import { AllRpcs } from "@cool-beans/shared";
 
 const ProtocolLive = RpcClient.layerProtocolHttp({
   url: "http://localhost:8000/rpc",
-}).pipe(
-  Layer.provide([
-    FetchHttpClient.layer,
-    RpcSerialization.layerNdjson,
-  ])
-);
+}).pipe(Layer.provide([FetchHttpClient.layer, RpcSerialization.layerNdjson]));
 
 export async function GET() {
   // Create a ReadableStream that will stream the foo items

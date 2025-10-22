@@ -2,7 +2,7 @@ import { describe, test, expect } from "bun:test";
 import { FetchHttpClient } from "@effect/platform";
 import { RpcClient, RpcSerialization } from "@effect/rpc";
 import { Effect, Layer, Sink, Stream } from "effect";
-import { AllRpcs } from "@collector/shared";
+import { AllRpcs } from "@cool-beans/shared";
 
 const ProtocolLive = RpcClient.layerProtocolHttp({
   url: "http://localhost:8000/rpc",

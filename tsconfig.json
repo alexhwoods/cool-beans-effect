@@ -27,9 +27,9 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@collector/shared": ["./packages/shared/src"],
-      "@collector/backend": ["./packages/backend/src"],
-      "@collector/frontend": ["./packages/frontend/src"]
+      "@cool-beans/shared": ["./packages/shared/src"],
+      "@cool-beans/backend": ["./packages/backend/src"],
+      "@cool-beans/frontend": ["./packages/frontend/src"]
     }
   },
   "include": [

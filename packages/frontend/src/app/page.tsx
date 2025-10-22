@@ -1,8 +1,8 @@
 import { FetchHttpClient } from "@effect/platform";
 import { RpcClient, RpcSerialization } from "@effect/rpc";
 import { Effect, Layer, Stream } from "effect";
-import { UserRpcs } from "@collector/shared";
-import type { User } from "@collector/shared";
+import { UserRpcs } from "@cool-beans/shared";
+import type { User } from "@cool-beans/shared";
 
 import Image from "next/image";
 

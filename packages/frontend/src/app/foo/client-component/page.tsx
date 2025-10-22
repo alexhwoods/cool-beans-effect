@@ -3,8 +3,8 @@
 import { FetchHttpClient } from "@effect/platform";
 import { RpcClient, RpcSerialization } from "@effect/rpc";
 import { Effect, Layer, Stream } from "effect";
-import { AllRpcs } from "@collector/shared";
-import type { Foo } from "@collector/shared";
+import { AllRpcs } from "@cool-beans/shared";
+import type { Foo } from "@cool-beans/shared";
 import { useEffect, useState } from "react";
 
 const ProtocolLive = RpcClient.layerProtocolHttp({
