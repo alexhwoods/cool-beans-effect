@@ -27,10 +27,10 @@ export default function Home() {
           </div>
           <Navigation className="hidden md:flex">
             <NavigationLink
-              href="#menu"
+              href="/coffees"
               className="px-4 py-2 rounded-lg hover:bg-primary/10 transition-all duration-300 font-medium"
             >
-              Menu
+              Coffees
             </NavigationLink>
             <NavigationLink
               href="#about"
@@ -42,7 +42,7 @@ export default function Home() {
               href="#location"
               className="px-4 py-2 rounded-lg hover:bg-primary/10 transition-all duration-300 font-medium"
             >
-              Location
+              Pricing
             </NavigationLink>
           </Navigation>
           <Button className="md:hidden" size="sm" variant="outline">
@@ -63,16 +63,17 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/60 flex items-center justify-center">
           <div className="text-center text-white z-10 max-w-4xl px-6">
             <h2 className="text-7xl font-bold mb-6 drop-shadow-2xl leading-tight">
-              Where Every Cup Tells a Story
+              Manage Your Coffee Empire
             </h2>
             <p className="text-2xl mb-10 drop-shadow-lg max-w-2xl mx-auto leading-relaxed">
-              Handcrafted coffee, locally roasted, served with love
+              Professional coffee management software for roasters, cafes, and
+              distributors
             </p>
             <Button
               size="lg"
               className="text-lg px-12 py-4 text-lg font-semibold shadow-2xl hover:scale-105 transition-transform duration-200"
             >
-              Order Now
+              Get Started
             </Button>
           </div>
         </div>
@@ -82,7 +83,7 @@ export default function Home() {
       <section className="py-20 px-6 max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold mb-4 text-foreground">
-            Our Services
+            Our Features
           </h2>
           <div className="w-24 h-1 bg-primary mx-auto rounded-full"></div>
         </div>
@@ -105,13 +106,13 @@ export default function Home() {
             </div>
             <CardHeader className="pb-4">
               <CardTitle className="text-2xl group-hover:text-primary transition-colors duration-300">
-                Fresh Roasted Beans
+                Inventory Management
               </CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-base leading-relaxed">
-                Small-batch roasting ensures peak freshness and flavor in every
-                cup.
+                Track your coffee inventory, roasting schedules, and stock
+                levels with precision and ease.
               </CardDescription>
             </CardContent>
           </Card>
@@ -134,13 +135,13 @@ export default function Home() {
             </div>
             <CardHeader className="pb-4">
               <CardTitle className="text-2xl group-hover:text-primary transition-colors duration-300">
-                Community First
+                Order Management
               </CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-base leading-relaxed">
-                Supporting local farmers and roasters. Every cup helps our
-                community thrive.
+                Streamline your order processing, customer management, and
+                delivery tracking all in one place.
               </CardDescription>
             </CardContent>
           </Card>
@@ -163,12 +164,13 @@ export default function Home() {
             </div>
             <CardHeader className="pb-4">
               <CardTitle className="text-2xl group-hover:text-primary transition-colors duration-300">
-                Iced Coffee
+                Analytics & Reports
               </CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-base leading-relaxed">
-                Smooth and refreshing. Perfect for warm days and cool vibes.
+                Get insights into your business performance with detailed
+                analytics and customizable reports.
               </CardDescription>
             </CardContent>
           </Card>
@@ -187,19 +189,19 @@ export default function Home() {
             </div>
             <div className="space-y-6">
               <p className="text-muted-foreground text-lg leading-relaxed">
-                We're more than just a coffee shop – we're a community hub where
-                friends meet, ideas brew, and moments are savored one cup at a
-                time.
+                We're more than just software – we're the complete solution for
+                coffee businesses looking to scale and thrive in today's
+                competitive market.
               </p>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Our beans are ethically sourced, locally roasted, and expertly
-                prepared by our passionate baristas who take pride in every
-                pour.
+                Our platform is built by coffee industry experts who understand
+                the unique challenges of managing inventory, orders, and
+                customer relationships in the coffee world.
               </p>
               <p className="text-muted-foreground text-lg leading-relaxed">
-                Whether you're here for a quick morning pick-me-up or settling
-                in for an afternoon of work, Cool Beans is your home away from
-                home.
+                Whether you're a small roastery or a large coffee distributor,
+                Cool Beans provides the tools you need to grow your business
+                efficiently and profitably.
               </p>
             </div>
           </div>
@@ -222,19 +224,21 @@ export default function Home() {
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary/90 to-primary opacity-50"></div>
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h2 className="text-5xl font-bold mb-8">Visit Us Today</h2>
+          <h2 className="text-5xl font-bold mb-8">Ready to Get Started?</h2>
           <div className="space-y-4 mb-12">
             <p className="text-2xl font-medium">
-              123 Coffee Street, Bean Town, CA 94000
+              Join hundreds of coffee businesses already using Cool Beans
             </p>
-            <p className="text-xl opacity-90">Open Daily: 7:00 AM - 8:00 PM</p>
+            <p className="text-xl opacity-90">
+              Start your free trial today - no credit card required
+            </p>
           </div>
           <Button
             size="lg"
             variant="secondary"
             className="text-lg px-12 py-4 font-semibold shadow-2xl hover:scale-105 transition-transform duration-200"
           >
-            Get Directions
+            Start Free Trial
           </Button>
         </div>
       </section>
