@@ -172,6 +172,99 @@ export default function CoffeesPage() {
   const handleDelete = (id: number) => {
     setCoffees(coffees.filter((c) => c.id !== id));
   };
+
+  const generateRandomCoffee = () => {
+    const coffeeNames = [
+      "Ethiopian Yirgacheffe",
+      "Colombian Supremo",
+      "Guatemala Antigua",
+      "Jamaican Blue Mountain",
+      "Hawaiian Kona",
+      "Sumatra Mandheling",
+      "Kenya AA",
+      "Costa Rica Tarrazu",
+      "Peru Organic",
+      "Brazil Santos",
+      "Tanzania Peaberry",
+      "Nicaragua Maragogype",
+      "Panama Geisha",
+      "Rwanda Bourbon",
+      "Mexico Chiapas",
+      "El Salvador Pacamara",
+      "Honduras Copan",
+      "Bolivia Caranavi",
+      "Ecuador Galapagos",
+      "Dominican Republic Barahona",
+    ];
+
+    const origins = [
+      "Ethiopia",
+      "Colombia",
+      "Guatemala",
+      "Jamaica",
+      "Hawaii",
+      "Indonesia",
+      "Kenya",
+      "Costa Rica",
+      "Peru",
+      "Brazil",
+      "Tanzania",
+      "Nicaragua",
+      "Panama",
+      "Rwanda",
+      "Mexico",
+      "El Salvador",
+      "Honduras",
+      "Bolivia",
+      "Ecuador",
+      "Dominican Republic",
+    ];
+
+    const roastLevels = ["Light", "Medium", "Medium-Dark", "Dark"];
+    const weights = ["8oz", "10oz", "12oz", "16oz"];
+
+    const descriptions = [
+      "Bright and floral with notes of jasmine and citrus",
+      "Rich and balanced with chocolate and nutty undertones",
+      "Full-bodied with smoky notes and a spicy finish",
+      "Smooth and mild with a clean, bright finish",
+      "Rich and smooth with a hint of sweetness",
+      "Earthy and full-bodied with low acidity",
+      "Wine-like acidity with berry and wine notes",
+      "Clean and bright with citrus and floral notes",
+      "Chocolatey with caramel and nutty flavors",
+      "Fruity and complex with tropical fruit notes",
+      "Spicy with cinnamon and clove undertones",
+      "Sweet and syrupy with molasses notes",
+      "Elegant and refined with tea-like qualities",
+      "Bold and intense with dark chocolate notes",
+      "Delicate and nuanced with herbal notes",
+    ];
+
+    const randomName =
+      coffeeNames[Math.floor(Math.random() * coffeeNames.length)];
+    const randomOrigin = origins[Math.floor(Math.random() * origins.length)];
+    const randomRoast =
+      roastLevels[Math.floor(Math.random() * roastLevels.length)];
+    const randomWeight = weights[Math.floor(Math.random() * weights.length)];
+    const randomDescription =
+      descriptions[Math.floor(Math.random() * descriptions.length)];
+    const randomPrice = Math.round((Math.random() * 80 + 15) * 100) / 100; // $15-$95
+    const randomInStock = Math.random() > 0.2; // 80% chance of being in stock
+
+    const newCoffee: Coffee = {
+      id: Math.max(...coffees.map((c) => c.id)) + 1,
+      name: randomName,
+      origin: randomOrigin,
+      roast: randomRoast,
+      price: randomPrice,
+      weight: randomWeight,
+      description: randomDescription,
+      inStock: randomInStock,
+    };
+
+    setCoffees([...coffees, newCoffee]);
+  };
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -224,153 +317,165 @@ export default function CoffeesPage() {
               Manage your coffee collection with ease
             </p>
           </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">
-                + Add Coffee
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add New Coffee</DialogTitle>
-                <DialogDescription>
-                  Create a new coffee entry with minimal required information.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Name *
-                  </Label>
-                  <Input
-                    id="name"
-                    value={newCoffee.name}
-                    onChange={(e) =>
-                      setNewCoffee({ ...newCoffee, name: e.target.value })
-                    }
-                    className="col-span-3"
-                    placeholder="Coffee name"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="origin" className="text-right">
-                    Origin *
-                  </Label>
-                  <Input
-                    id="origin"
-                    value={newCoffee.origin}
-                    onChange={(e) =>
-                      setNewCoffee({ ...newCoffee, origin: e.target.value })
-                    }
-                    className="col-span-3"
-                    placeholder="Country/Region"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="price" className="text-right">
-                    Price *
-                  </Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={newCoffee.price}
-                    onChange={(e) =>
-                      setNewCoffee({
-                        ...newCoffee,
-                        price: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="col-span-3"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="roast" className="text-right">
-                    Roast
-                  </Label>
-                  <Select
-                    value={newCoffee.roast}
-                    onValueChange={(value) =>
-                      setNewCoffee({ ...newCoffee, roast: value })
-                    }
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Light">Light</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Medium-Dark">Medium-Dark</SelectItem>
-                      <SelectItem value="Dark">Dark</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="weight" className="text-right">
-                    Weight
-                  </Label>
-                  <Select
-                    value={newCoffee.weight}
-                    onValueChange={(value) =>
-                      setNewCoffee({ ...newCoffee, weight: value })
-                    }
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="8oz">8oz</SelectItem>
-                      <SelectItem value="10oz">10oz</SelectItem>
-                      <SelectItem value="12oz">12oz</SelectItem>
-                      <SelectItem value="16oz">16oz</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="description" className="text-right">
-                    Description
-                  </Label>
-                  <Input
-                    id="description"
-                    value={newCoffee.description}
-                    onChange={(e) =>
-                      setNewCoffee({
-                        ...newCoffee,
-                        description: e.target.value,
-                      })
-                    }
-                    className="col-span-3"
-                    placeholder="Flavor notes (optional)"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="inStock" className="text-right">
-                    In Stock
-                  </Label>
-                  <Select
-                    value={newCoffee.inStock?.toString()}
-                    onValueChange={(value) =>
-                      setNewCoffee({ ...newCoffee, inStock: value === "true" })
-                    }
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Yes</SelectItem>
-                      <SelectItem value="false">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" onClick={handleCreate}>
-                  Add Coffee
+          <div className="flex space-x-3">
+            <Button
+              variant="outline"
+              onClick={generateRandomCoffee}
+              className="hover:bg-secondary/50"
+            >
+              🎲 Generate Random
+            </Button>
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90">
+                  + Add Coffee
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Coffee</DialogTitle>
+                  <DialogDescription>
+                    Create a new coffee entry with minimal required information.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">
+                      Name *
+                    </Label>
+                    <Input
+                      id="name"
+                      value={newCoffee.name}
+                      onChange={(e) =>
+                        setNewCoffee({ ...newCoffee, name: e.target.value })
+                      }
+                      className="col-span-3"
+                      placeholder="Coffee name"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="origin" className="text-right">
+                      Origin *
+                    </Label>
+                    <Input
+                      id="origin"
+                      value={newCoffee.origin}
+                      onChange={(e) =>
+                        setNewCoffee({ ...newCoffee, origin: e.target.value })
+                      }
+                      className="col-span-3"
+                      placeholder="Country/Region"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="price" className="text-right">
+                      Price *
+                    </Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      value={newCoffee.price}
+                      onChange={(e) =>
+                        setNewCoffee({
+                          ...newCoffee,
+                          price: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      className="col-span-3"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="roast" className="text-right">
+                      Roast
+                    </Label>
+                    <Select
+                      value={newCoffee.roast}
+                      onValueChange={(value) =>
+                        setNewCoffee({ ...newCoffee, roast: value })
+                      }
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Light">Light</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="Medium-Dark">Medium-Dark</SelectItem>
+                        <SelectItem value="Dark">Dark</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="weight" className="text-right">
+                      Weight
+                    </Label>
+                    <Select
+                      value={newCoffee.weight}
+                      onValueChange={(value) =>
+                        setNewCoffee({ ...newCoffee, weight: value })
+                      }
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="8oz">8oz</SelectItem>
+                        <SelectItem value="10oz">10oz</SelectItem>
+                        <SelectItem value="12oz">12oz</SelectItem>
+                        <SelectItem value="16oz">16oz</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="description" className="text-right">
+                      Description
+                    </Label>
+                    <Input
+                      id="description"
+                      value={newCoffee.description}
+                      onChange={(e) =>
+                        setNewCoffee({
+                          ...newCoffee,
+                          description: e.target.value,
+                        })
+                      }
+                      className="col-span-3"
+                      placeholder="Flavor notes (optional)"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="inStock" className="text-right">
+                      In Stock
+                    </Label>
+                    <Select
+                      value={newCoffee.inStock?.toString()}
+                      onValueChange={(value) =>
+                        setNewCoffee({
+                          ...newCoffee,
+                          inStock: value === "true",
+                        })
+                      }
+                    >
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">Yes</SelectItem>
+                        <SelectItem value="false">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" onClick={handleCreate}>
+                    Add Coffee
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Coffee Table */}
