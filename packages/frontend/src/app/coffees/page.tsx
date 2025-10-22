@@ -36,18 +36,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Effect, Layer } from "effect";
 import {
   Coffee,
   CreateCoffeeRequest,
   UpdateCoffeeRequest,
   DeleteCoffeeRequest,
 } from "@cool-beans/shared";
-import {
-  listCoffees,
-  createCoffee,
-  updateCoffee,
-  deleteCoffee,
-} from "@/lib/coffee-client";
+import { makeRpcClient, ProtocolLive } from "@/rpc-client";
 
 export default function CoffeesPage() {
   const [coffees, setCoffees] = useState<Coffee[]>([]);
@@ -72,11 +68,26 @@ export default function CoffeesPage() {
   }, []);
 
   const loadCoffees = async () => {
+    setLoading(true);
+    setError(null);
+
+    const program = Effect.gen(function* () {
+      const client = yield* makeRpcClient();
+      return yield* client.listCoffees();
+    }).pipe(
+      Effect.scoped,
+      Effect.provide(ProtocolLive),
+      Effect.catchAll((err) =>
+        Effect.sync(() => {
+          setError(String(err));
+          return [];
+        })
+      )
+    );
+
     try {
-      setLoading(true);
-      setError(null);
-      const result = await listCoffees();
-      setCoffees(result.slice());
+      const result = await Effect.runPromise(program);
+      setCoffees([...result]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load coffees");
     } finally {
@@ -86,29 +97,45 @@ export default function CoffeesPage() {
 
   const handleCreate = async () => {
     if (newCoffee.name && newCoffee.origin && newCoffee.price) {
-      try {
-        const request: CreateCoffeeRequest = {
-          name: newCoffee.name,
-          origin: newCoffee.origin,
-          roast: newCoffee.roast || "Medium",
-          price: newCoffee.price,
-          weight: newCoffee.weight || "12oz",
-          description: newCoffee.description || "",
-          inStock: newCoffee.inStock ?? true,
-        };
+      const request: CreateCoffeeRequest = {
+        name: newCoffee.name,
+        origin: newCoffee.origin,
+        roast: newCoffee.roast || "Medium",
+        price: newCoffee.price,
+        weight: newCoffee.weight || "12oz",
+        description: newCoffee.description || "",
+        inStock: newCoffee.inStock ?? true,
+      };
 
-        const createdCoffee = await createCoffee(request);
-        setCoffees([...coffees, createdCoffee]);
-        setNewCoffee({
-          name: "",
-          origin: "",
-          roast: "Medium",
-          price: 0,
-          weight: "12oz",
-          description: "",
-          inStock: true,
-        });
-        setIsCreateOpen(false);
+      const program = Effect.gen(function* () {
+        const client = yield* makeRpcClient();
+        return yield* client.createCoffee(request);
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(ProtocolLive),
+        Effect.catchAll((err) =>
+          Effect.sync(() => {
+            setError(String(err));
+            return null;
+          })
+        )
+      );
+
+      try {
+        const createdCoffee = await Effect.runPromise(program);
+        if (createdCoffee) {
+          setCoffees([...coffees, createdCoffee]);
+          setNewCoffee({
+            name: "",
+            origin: "",
+            roast: "Medium",
+            price: 0,
+            weight: "12oz",
+            description: "",
+            inStock: true,
+          });
+          setIsCreateOpen(false);
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to create coffee"
@@ -124,24 +151,40 @@ export default function CoffeesPage() {
 
   const handleUpdate = async () => {
     if (editingCoffee) {
-      try {
-        const request: UpdateCoffeeRequest = {
-          id: editingCoffee.id,
-          name: editingCoffee.name,
-          origin: editingCoffee.origin,
-          roast: editingCoffee.roast,
-          price: editingCoffee.price,
-          weight: editingCoffee.weight,
-          description: editingCoffee.description,
-          inStock: editingCoffee.inStock,
-        };
+      const request: UpdateCoffeeRequest = {
+        id: editingCoffee.id,
+        name: editingCoffee.name,
+        origin: editingCoffee.origin,
+        roast: editingCoffee.roast,
+        price: editingCoffee.price,
+        weight: editingCoffee.weight,
+        description: editingCoffee.description,
+        inStock: editingCoffee.inStock,
+      };
 
-        const updatedCoffee = await updateCoffee(request);
-        setCoffees(
-          coffees.map((c) => (c.id === editingCoffee.id ? updatedCoffee : c))
-        );
-        setIsEditOpen(false);
-        setEditingCoffee(null);
+      const program = Effect.gen(function* () {
+        const client = yield* makeRpcClient();
+        return yield* client.updateCoffee(request);
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(ProtocolLive),
+        Effect.catchAll((err) =>
+          Effect.sync(() => {
+            setError(String(err));
+            return null;
+          })
+        )
+      );
+
+      try {
+        const updatedCoffee = await Effect.runPromise(program);
+        if (updatedCoffee) {
+          setCoffees(
+            coffees.map((c) => (c.id === editingCoffee.id ? updatedCoffee : c))
+          );
+          setIsEditOpen(false);
+          setEditingCoffee(null);
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to update coffee"
@@ -151,10 +194,27 @@ export default function CoffeesPage() {
   };
 
   const handleDelete = async (id: number) => {
+    const request: DeleteCoffeeRequest = { id };
+
+    const program = Effect.gen(function* () {
+      const client = yield* makeRpcClient();
+      return yield* client.deleteCoffee(request);
+    }).pipe(
+      Effect.scoped,
+      Effect.provide(ProtocolLive),
+      Effect.catchAll((err) =>
+        Effect.sync(() => {
+          setError(String(err));
+          return false;
+        })
+      )
+    );
+
     try {
-      const request: DeleteCoffeeRequest = { id };
-      await deleteCoffee(request);
-      setCoffees(coffees.filter((c) => c.id !== id));
+      const success = await Effect.runPromise(program);
+      if (success !== false) {
+        setCoffees(coffees.filter((c) => c.id !== id));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete coffee");
     }
@@ -239,19 +299,35 @@ export default function CoffeesPage() {
     const randomPrice = Math.round((Math.random() * 80 + 15) * 100) / 100; // $15-$95
     const randomInStock = Math.random() > 0.2; // 80% chance of being in stock
 
-    try {
-      const request: CreateCoffeeRequest = {
-        name: randomName,
-        origin: randomOrigin,
-        roast: randomRoast,
-        price: randomPrice,
-        weight: randomWeight,
-        description: randomDescription,
-        inStock: randomInStock,
-      };
+    const request: CreateCoffeeRequest = {
+      name: randomName,
+      origin: randomOrigin,
+      roast: randomRoast,
+      price: randomPrice,
+      weight: randomWeight,
+      description: randomDescription,
+      inStock: randomInStock,
+    };
 
-      const createdCoffee = await createCoffee(request);
-      setCoffees([...coffees, createdCoffee]);
+    const program = Effect.gen(function* () {
+      const client = yield* makeRpcClient();
+      return yield* client.createCoffee(request);
+    }).pipe(
+      Effect.scoped,
+      Effect.provide(ProtocolLive),
+      Effect.catchAll((err) =>
+        Effect.sync(() => {
+          setError(String(err));
+          return null;
+        })
+      )
+    );
+
+    try {
+      const createdCoffee = await Effect.runPromise(program);
+      if (createdCoffee) {
+        setCoffees([...coffees, createdCoffee]);
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create random coffee"
