@@ -1,8 +1,12 @@
 import { describe, test, expect } from "bun:test";
 import { FetchHttpClient } from "@effect/platform";
 import { RpcClient, RpcSerialization } from "@effect/rpc";
-import { Effect, Layer } from "effect";
-import { AllRpcs } from "@cool-beans/shared";
+import { Effect, Either, Layer, Option } from "effect";
+import {
+  AllRpcs,
+  CoffeeAlreadyExists,
+  CoffeeNotFound,
+} from "@cool-beans/shared";
 
 const ProtocolLive = RpcClient.layerProtocolHttp({
   url: "http://localhost:8000/rpc",
@@ -16,19 +20,22 @@ const ProtocolLive = RpcClient.layerProtocolHttp({
 );
 
 describe("Coffee RPC E2E", () => {
-  test(
-    "listCoffees should return coffee items",
-    async () => {
-      const result = await Effect.gen(function* () {
-        const client = yield* RpcClient.make(AllRpcs);
-        return yield* client.listCoffees();
-      }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+  test("listCoffees should return coffee items", async () => {
+    await Effect.gen(function* () {
+      // Arrange
+      const client = yield* RpcClient.make(AllRpcs);
 
-      // Verify we got coffee items from the service
-      expect(result.length).toBeGreaterThan(0);
+      // Act
+      const result = yield* Effect.either(client.listCoffees());
+
+      // Assert
+      expect(Either.isRight(result)).toBe(true);
+
+      const coffees = Option.getOrThrow(Either.getRight(result));
+      expect(coffees.length).toBeGreaterThan(0);
 
       // Verify all items have the expected structure
-      result.forEach((coffee) => {
+      coffees.forEach((coffee) => {
         expect(coffee).toHaveProperty("id");
         expect(coffee).toHaveProperty("name");
         expect(coffee).toHaveProperty("origin");
@@ -47,19 +54,18 @@ describe("Coffee RPC E2E", () => {
         expect(typeof coffee.description).toBe("string");
         expect(typeof coffee.inStock).toBe("boolean");
       });
-    },
-    {
-      timeout: 20 * 1000,
-    }
-  );
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+  });
 
-  test(
-    "createCoffee should create a new coffee",
-    async () => {
+  test("createCoffee should create a new coffee", async () => {
+    await Effect.gen(function* () {
+      // Arrange
       const uniqueName = `Test Coffee ${Date.now()}`;
-      const result = await Effect.gen(function* () {
-        const client = yield* RpcClient.make(AllRpcs);
-        return yield* client.createCoffee({
+      const client = yield* RpcClient.make(AllRpcs);
+
+      // Act
+      const result = yield* Effect.either(
+        client.createCoffee({
           name: uniqueName,
           origin: "Test Origin",
           roast: "Medium",
@@ -67,11 +73,14 @@ describe("Coffee RPC E2E", () => {
           weight: "12oz",
           description: "A test coffee for e2e testing",
           inStock: true,
-        });
-      }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+        })
+      );
 
-      // Verify the created coffee
-      expect(result).toEqual({
+      // Assert
+      expect(Either.isRight(result)).toBe(true);
+
+      const coffee = Option.getOrThrow(Either.getRight(result));
+      expect(coffee).toEqual({
         id: expect.any(Number),
         name: uniqueName,
         origin: "Test Origin",
@@ -81,22 +90,30 @@ describe("Coffee RPC E2E", () => {
         description: "A test coffee for e2e testing",
         inStock: true,
       });
-      expect(result.id).toBeGreaterThan(0); // Should be a valid ID
-    },
-    {
-      timeout: 20 * 1000,
-    }
-  );
+      expect(coffee.id).toBeGreaterThan(0); // Should be a valid ID
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+  });
 
-  test(
-    "createCoffee should fail when coffee with same name exists",
-    async () => {
-      const uniqueName = `Duplicate Test Coffee ${Date.now()}`;
-
+  test("createCoffee should fail when coffee with same name exists", async () => {
+    await Effect.gen(function* () {
+      // Arrange
       // First create a coffee
-      await Effect.gen(function* () {
-        const client = yield* RpcClient.make(AllRpcs);
-        return yield* client.createCoffee({
+      const uniqueName = `Duplicate Test Coffee ${Date.now()}`;
+      const client = yield* RpcClient.make(AllRpcs);
+
+      yield* client.createCoffee({
+        name: uniqueName,
+        origin: "Test Origin",
+        roast: "Medium",
+        price: 19.99,
+        weight: "12oz",
+        description: "A test coffee for e2e testing",
+        inStock: true,
+      });
+
+      // Act
+      const result = yield* Effect.either(
+        client.createCoffee({
           name: uniqueName,
           origin: "Test Origin",
           roast: "Medium",
@@ -104,50 +121,28 @@ describe("Coffee RPC E2E", () => {
           weight: "12oz",
           description: "A test coffee for e2e testing",
           inStock: true,
-        });
-      }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
-
-      // Then try to create another with the same name
-      const result = await Effect.gen(function* () {
-        const client = yield* RpcClient.make(AllRpcs);
-        return yield* client.createCoffee({
-          name: uniqueName, // Same name as above
-          origin: "Test Origin",
-          roast: "Medium",
-          price: 19.99,
-          weight: "12oz",
-          description: "A test coffee for e2e testing",
-          inStock: true,
-        });
-      }).pipe(
-        Effect.scoped,
-        Effect.provide(ProtocolLive),
-        Effect.either,
-        Effect.runPromise
+        })
       );
 
-      // Verify the error is the expected CoffeeAlreadyExists error
-      expect(result._tag).toBe("Left");
-      if (result._tag === "Left") {
-        expect(result.left._tag).toBe("CoffeeAlreadyExists");
-        expect(result.left.name).toBe(uniqueName);
-        expect(result.left.suggestion).toBe(`${uniqueName} 2`);
-      }
-    },
-    {
-      timeout: 20 * 1000,
-    }
-  );
+      // Assert
+      expect(Either.isLeft(result)).toBe(true);
 
-  test(
-    "updateCoffee should update an existing coffee",
-    async () => {
+      const error = Option.getOrThrow(Either.getLeft(result));
+      expect(error).toBeInstanceOf(CoffeeAlreadyExists);
+      expect((error as CoffeeAlreadyExists).name).toBe(uniqueName);
+      expect((error as CoffeeAlreadyExists).suggestion).toBe(`${uniqueName} 2`);
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+  });
+
+  test("updateCoffee should update an existing coffee", async () => {
+    await Effect.gen(function* () {
+      // Arrange
       const uniqueName = `Update Test Coffee ${Date.now()}`;
+      const client = yield* RpcClient.make(AllRpcs);
 
       // First create a coffee
-      const createdCoffee = await Effect.gen(function* () {
-        const client = yield* RpcClient.make(AllRpcs);
-        return yield* client.createCoffee({
+      const createResult = yield* Effect.either(
+        client.createCoffee({
           name: uniqueName,
           origin: "Test Origin",
           roast: "Medium",
@@ -155,13 +150,15 @@ describe("Coffee RPC E2E", () => {
           weight: "12oz",
           description: "A test coffee for e2e testing",
           inStock: true,
-        });
-      }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+        })
+      );
 
-      // Then update it
-      const result = await Effect.gen(function* () {
-        const client = yield* RpcClient.make(AllRpcs);
-        return yield* client.updateCoffee({
+      expect(Either.isRight(createResult)).toBe(true);
+      const createdCoffee = Option.getOrThrow(Either.getRight(createResult));
+
+      // Act
+      const result = yield* Effect.either(
+        client.updateCoffee({
           id: createdCoffee.id,
           name: "Updated Test Coffee",
           origin: "Updated Origin",
@@ -170,11 +167,14 @@ describe("Coffee RPC E2E", () => {
           weight: "8oz",
           description: "Updated description with new price",
           inStock: false,
-        });
-      }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+        })
+      );
 
-      // Verify the updated coffee
-      expect(result).toEqual({
+      // Assert
+      expect(Either.isRight(result)).toBe(true);
+
+      const updatedCoffee = Option.getOrThrow(Either.getRight(result));
+      expect(updatedCoffee).toEqual({
         id: createdCoffee.id,
         name: "Updated Test Coffee",
         origin: "Updated Origin",
@@ -184,18 +184,17 @@ describe("Coffee RPC E2E", () => {
         description: "Updated description with new price",
         inStock: false,
       });
-    },
-    {
-      timeout: 20 * 1000,
-    }
-  );
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+  });
 
-  test(
-    "updateCoffee should fail when coffee doesn't exist",
-    async () => {
-      const result = await Effect.gen(function* () {
-        const client = yield* RpcClient.make(AllRpcs);
-        return yield* client.updateCoffee({
+  test("updateCoffee should fail when coffee doesn't exist", async () => {
+    await Effect.gen(function* () {
+      // Arrange
+      const client = yield* RpcClient.make(AllRpcs);
+
+      // Act
+      const result = yield* Effect.either(
+        client.updateCoffee({
           id: 999, // Non-existent ID
           name: "Non-existent Coffee",
           origin: "Nowhere",
@@ -204,35 +203,27 @@ describe("Coffee RPC E2E", () => {
           weight: "12oz",
           description: "This coffee doesn't exist",
           inStock: true,
-        });
-      }).pipe(
-        Effect.scoped,
-        Effect.provide(ProtocolLive),
-        Effect.either,
-        Effect.runPromise
+        })
       );
 
-      // Verify the error is the expected CoffeeNotFound error
-      expect(result._tag).toBe("Left");
-      if (result._tag === "Left") {
-        expect(result.left._tag).toBe("CoffeeNotFound");
-        expect(result.left.id).toBe(999);
-      }
-    },
-    {
-      timeout: 20 * 1000,
-    }
-  );
+      // Assert
+      expect(Either.isLeft(result)).toBe(true);
 
-  test(
-    "deleteCoffee should delete an existing coffee",
-    async () => {
+      const error = Option.getOrThrow(Either.getLeft(result));
+      expect(error).toBeInstanceOf(CoffeeNotFound);
+      expect((error as CoffeeNotFound).id).toBe(999);
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+  });
+
+  test("deleteCoffee should delete an existing coffee", async () => {
+    await Effect.gen(function* () {
+      // Arrange
       const uniqueName = `Delete Test Coffee ${Date.now()}`;
+      const client = yield* RpcClient.make(AllRpcs);
 
       // First create a coffee
-      const createdCoffee = await Effect.gen(function* () {
-        const client = yield* RpcClient.make(AllRpcs);
-        return yield* client.createCoffee({
+      const createResult = yield* Effect.either(
+        client.createCoffee({
           name: uniqueName,
           origin: "Test Origin",
           roast: "Medium",
@@ -240,60 +231,58 @@ describe("Coffee RPC E2E", () => {
           weight: "12oz",
           description: "A test coffee for e2e testing",
           inStock: true,
-        });
-      }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
-
-      // Then delete it
-      const result = await Effect.gen(function* () {
-        const client = yield* RpcClient.make(AllRpcs);
-        return yield* client.deleteCoffee({ id: createdCoffee.id });
-      }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
-
-      // Verify the deletion succeeded (returns void)
-      expect(result).toBeUndefined();
-    },
-    {
-      timeout: 20 * 1000,
-    }
-  );
-
-  test(
-    "deleteCoffee should fail when coffee doesn't exist",
-    async () => {
-      const result = await Effect.gen(function* () {
-        const client = yield* RpcClient.make(AllRpcs);
-        return yield* client.deleteCoffee({ id: 999 }); // Non-existent ID
-      }).pipe(
-        Effect.scoped,
-        Effect.provide(ProtocolLive),
-        Effect.either,
-        Effect.runPromise
+        })
       );
 
-      // Verify the error is the expected CoffeeNotFound error
-      expect(result._tag).toBe("Left");
-      if (result._tag === "Left") {
-        expect(result.left._tag).toBe("CoffeeNotFound");
-        expect(result.left.id).toBe(999);
-      }
-    },
-    {
-      timeout: 20 * 1000,
-    }
-  );
+      expect(Either.isRight(createResult)).toBe(true);
+      const createdCoffee = Option.getOrThrow(Either.getRight(createResult));
 
-  test(
-    "listCoffees should reflect changes after create, update, and delete",
-    async () => {
-      const result = await Effect.gen(function* () {
-        const client = yield* RpcClient.make(AllRpcs);
+      // Act
+      const result = yield* Effect.either(
+        client.deleteCoffee({ id: createdCoffee.id })
+      );
 
-        // First, get initial count
-        const initialCoffees = yield* client.listCoffees();
-        const initialCount = initialCoffees.length;
+      // Assert
+      expect(Either.isRight(result)).toBe(true);
 
-        // Create a new coffee
-        const newCoffee = yield* client.createCoffee({
+      const deleteResult = Option.getOrThrow(Either.getRight(result));
+      expect(deleteResult).toBeUndefined(); // deleteCoffee returns void
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+  });
+
+  test("deleteCoffee should fail when coffee doesn't exist", async () => {
+    await Effect.gen(function* () {
+      // Arrange
+      const client = yield* RpcClient.make(AllRpcs);
+
+      // Act
+      const result = yield* Effect.either(
+        client.deleteCoffee({ id: 999 }) // Non-existent ID
+      );
+
+      // Assert
+      expect(Either.isLeft(result)).toBe(true);
+
+      const error = Option.getOrThrow(Either.getLeft(result));
+      expect(error).toBeInstanceOf(CoffeeNotFound);
+      expect((error as CoffeeNotFound).id).toBe(999);
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+  });
+
+  test("listCoffees should reflect changes after create, update, and delete", async () => {
+    await Effect.gen(function* () {
+      // Arrange
+      const client = yield* RpcClient.make(AllRpcs);
+
+      // Get initial count
+      const initialResult = yield* Effect.either(client.listCoffees());
+      expect(Either.isRight(initialResult)).toBe(true);
+      const initialCoffees = Option.getOrThrow(Either.getRight(initialResult));
+      const initialCount = initialCoffees.length;
+
+      // Act & Assert - Create a new coffee
+      const createResult = yield* Effect.either(
+        client.createCoffee({
           name: "Integration Test Coffee",
           origin: "Test Origin",
           roast: "Medium",
@@ -301,14 +290,21 @@ describe("Coffee RPC E2E", () => {
           weight: "8oz",
           description: "Coffee for integration testing",
           inStock: true,
-        });
+        })
+      );
 
-        // Verify count increased
-        const afterCreate = yield* client.listCoffees();
-        expect(afterCreate.length).toBe(initialCount + 1);
+      expect(Either.isRight(createResult)).toBe(true);
+      const newCoffee = Option.getOrThrow(Either.getRight(createResult));
 
-        // Update the coffee
-        yield* client.updateCoffee({
+      // Verify count increased
+      const afterCreateResult = yield* Effect.either(client.listCoffees());
+      expect(Either.isRight(afterCreateResult)).toBe(true);
+      const afterCreate = Option.getOrThrow(Either.getRight(afterCreateResult));
+      expect(afterCreate.length).toBe(initialCount + 1);
+
+      // Act & Assert - Update the coffee
+      const updateResult = yield* Effect.either(
+        client.updateCoffee({
           id: newCoffee.id,
           name: "Updated Integration Test Coffee",
           origin: "Updated Origin",
@@ -317,30 +313,32 @@ describe("Coffee RPC E2E", () => {
           weight: "8oz",
           description: "Updated description",
           inStock: false,
-        });
+        })
+      );
 
-        // Verify the update
-        const afterUpdate = yield* client.listCoffees();
-        const updatedCoffee = afterUpdate.find((c) => c.id === newCoffee.id);
-        expect(updatedCoffee?.name).toBe("Updated Integration Test Coffee");
-        expect(updatedCoffee?.price).toBe(18.99);
-        expect(updatedCoffee?.inStock).toBe(false);
+      expect(Either.isRight(updateResult)).toBe(true);
 
-        // Delete the coffee
-        yield* client.deleteCoffee({ id: newCoffee.id });
+      // Verify the update
+      const afterUpdateResult = yield* Effect.either(client.listCoffees());
+      expect(Either.isRight(afterUpdateResult)).toBe(true);
+      const afterUpdate = Option.getOrThrow(Either.getRight(afterUpdateResult));
+      const updatedCoffee = afterUpdate.find((c) => c.id === newCoffee.id);
+      expect(updatedCoffee?.name).toBe("Updated Integration Test Coffee");
+      expect(updatedCoffee?.price).toBe(18.99);
+      expect(updatedCoffee?.inStock).toBe(false);
 
-        // Verify count is back to initial
-        const afterDelete = yield* client.listCoffees();
-        expect(afterDelete.length).toBe(initialCount);
+      // Act & Assert - Delete the coffee
+      const deleteResult = yield* Effect.either(
+        client.deleteCoffee({ id: newCoffee.id })
+      );
 
-        return afterDelete;
-      }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+      expect(Either.isRight(deleteResult)).toBe(true);
 
-      // Verify final state - should be back to initial count
-      expect(result.length).toBeGreaterThan(0);
-    },
-    {
-      timeout: 30 * 1000,
-    }
-  );
+      // Verify count is back to initial
+      const afterDeleteResult = yield* Effect.either(client.listCoffees());
+      expect(Either.isRight(afterDeleteResult)).toBe(true);
+      const afterDelete = Option.getOrThrow(Either.getRight(afterDeleteResult));
+      expect(afterDelete.length).toBe(initialCount);
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+  });
 });
