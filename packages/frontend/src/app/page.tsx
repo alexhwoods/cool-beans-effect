@@ -61,7 +61,12 @@ export default function Home() {
         </div>
         <div className="grid md:grid-cols-3 gap-10">
           {/* Card 1 - Spilled Beans */}
-          <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group">
+          <Card
+            className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group relative"
+            style={{
+              boxShadow: "8px 8px 0px 0px oklch(0.6083 0.0623 44.3588)",
+            }}
+          >
             <div className="relative h-72 w-full overflow-hidden">
               <Image
                 src="/spilled-beans.avif"
@@ -85,7 +90,12 @@ export default function Home() {
           </Card>
 
           {/* Card 2 - Local Businesses */}
-          <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group">
+          <Card
+            className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group relative"
+            style={{
+              boxShadow: "8px 8px 0px 0px oklch(0.6083 0.0623 44.3588)",
+            }}
+          >
             <div className="relative h-72 w-full overflow-hidden">
               <Image
                 src="/community-first-lol.avif"
@@ -109,7 +119,12 @@ export default function Home() {
           </Card>
 
           {/* Card 3 - Iced Coffee */}
-          <Card className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group">
+          <Card
+            className="overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group relative"
+            style={{
+              boxShadow: "8px 8px 0px 0px oklch(0.6083 0.0623 44.3588)",
+            }}
+          >
             <div className="relative h-72 w-full overflow-hidden">
               <Image
                 src="/iced-coffee.avif"
