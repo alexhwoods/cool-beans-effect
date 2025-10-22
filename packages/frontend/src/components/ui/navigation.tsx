@@ -1,9 +1,10 @@
-import * as React from "react"
-import Link from "next/link"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface NavigationProps {
-  className?: string
+  className?: string;
+  children?: React.ReactNode;
 }
 
 const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
@@ -14,13 +15,13 @@ const Navigation = React.forwardRef<HTMLElement, NavigationProps>(
       {...props}
     />
   )
-)
-Navigation.displayName = "Navigation"
+);
+Navigation.displayName = "Navigation";
 
 interface NavigationLinkProps {
-  href: string
-  children: React.ReactNode
-  className?: string
+  href: string;
+  children: React.ReactNode;
+  className?: string;
 }
 
 const NavigationLink = React.forwardRef<HTMLAnchorElement, NavigationLinkProps>(
@@ -37,7 +38,7 @@ const NavigationLink = React.forwardRef<HTMLAnchorElement, NavigationLinkProps>(
       {children}
     </Link>
   )
-)
-NavigationLink.displayName = "NavigationLink"
+);
+NavigationLink.displayName = "NavigationLink";
 
-export { Navigation, NavigationLink }
+export { Navigation, NavigationLink };
