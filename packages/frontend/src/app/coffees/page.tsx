@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,85 +36,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-// Coffee type definition
-interface Coffee {
-  id: number;
-  name: string;
-  origin: string;
-  roast: string;
-  price: number;
-  weight: string;
-  description: string;
-  inStock: boolean;
-}
-
-// Initial coffee data
-const initialCoffees: Coffee[] = [
-  {
-    id: 1,
-    name: "Ethiopian Yirgacheffe",
-    origin: "Ethiopia",
-    roast: "Light",
-    price: 24.99,
-    weight: "12oz",
-    description: "Bright and floral with notes of jasmine and citrus",
-    inStock: true,
-  },
-  {
-    id: 2,
-    name: "Colombian Supremo",
-    origin: "Colombia",
-    roast: "Medium",
-    price: 22.99,
-    weight: "12oz",
-    description: "Rich and balanced with chocolate and nutty undertones",
-    inStock: true,
-  },
-  {
-    id: 3,
-    name: "Guatemala Antigua",
-    origin: "Guatemala",
-    roast: "Medium-Dark",
-    price: 26.99,
-    weight: "12oz",
-    description: "Full-bodied with smoky notes and a spicy finish",
-    inStock: false,
-  },
-  {
-    id: 4,
-    name: "Jamaican Blue Mountain",
-    origin: "Jamaica",
-    roast: "Medium",
-    price: 89.99,
-    weight: "8oz",
-    description: "Smooth and mild with a clean, bright finish",
-    inStock: true,
-  },
-  {
-    id: 5,
-    name: "Hawaiian Kona",
-    origin: "Hawaii",
-    roast: "Medium",
-    price: 45.99,
-    weight: "10oz",
-    description: "Rich and smooth with a hint of sweetness",
-    inStock: true,
-  },
-  {
-    id: 6,
-    name: "Sumatra Mandheling",
-    origin: "Indonesia",
-    roast: "Dark",
-    price: 28.99,
-    weight: "12oz",
-    description: "Earthy and full-bodied with low acidity",
-    inStock: true,
-  },
-];
+import {
+  Coffee,
+  CreateCoffeeRequest,
+  UpdateCoffeeRequest,
+  DeleteCoffeeRequest,
+} from "@cool-beans/shared";
+import {
+  listCoffees,
+  createCoffee,
+  updateCoffee,
+  deleteCoffee,
+} from "@/lib/coffee-client";
 
 export default function CoffeesPage() {
-  const [coffees, setCoffees] = useState<Coffee[]>(initialCoffees);
+  const [coffees, setCoffees] = useState<Coffee[]>([]);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingCoffee, setEditingCoffee] = useState<Coffee | null>(null);
@@ -127,30 +63,57 @@ export default function CoffeesPage() {
     description: "",
     inStock: true,
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCreate = () => {
+  // Load coffees on component mount
+  useEffect(() => {
+    loadCoffees();
+  }, []);
+
+  const loadCoffees = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await listCoffees();
+      setCoffees(result.slice());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load coffees");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreate = async () => {
     if (newCoffee.name && newCoffee.origin && newCoffee.price) {
-      const coffee: Coffee = {
-        id: Math.max(...coffees.map((c) => c.id)) + 1,
-        name: newCoffee.name,
-        origin: newCoffee.origin,
-        roast: newCoffee.roast || "Medium",
-        price: newCoffee.price,
-        weight: newCoffee.weight || "12oz",
-        description: newCoffee.description || "",
-        inStock: newCoffee.inStock || true,
-      };
-      setCoffees([...coffees, coffee]);
-      setNewCoffee({
-        name: "",
-        origin: "",
-        roast: "Medium",
-        price: 0,
-        weight: "12oz",
-        description: "",
-        inStock: true,
-      });
-      setIsCreateOpen(false);
+      try {
+        const request: CreateCoffeeRequest = {
+          name: newCoffee.name,
+          origin: newCoffee.origin,
+          roast: newCoffee.roast || "Medium",
+          price: newCoffee.price,
+          weight: newCoffee.weight || "12oz",
+          description: newCoffee.description || "",
+          inStock: newCoffee.inStock ?? true,
+        };
+
+        const createdCoffee = await createCoffee(request);
+        setCoffees([...coffees, createdCoffee]);
+        setNewCoffee({
+          name: "",
+          origin: "",
+          roast: "Medium",
+          price: 0,
+          weight: "12oz",
+          description: "",
+          inStock: true,
+        });
+        setIsCreateOpen(false);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to create coffee"
+        );
+      }
     }
   };
 
@@ -159,21 +122,45 @@ export default function CoffeesPage() {
     setIsEditOpen(true);
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (editingCoffee) {
-      setCoffees(
-        coffees.map((c) => (c.id === editingCoffee.id ? editingCoffee : c))
-      );
-      setIsEditOpen(false);
-      setEditingCoffee(null);
+      try {
+        const request: UpdateCoffeeRequest = {
+          id: editingCoffee.id,
+          name: editingCoffee.name,
+          origin: editingCoffee.origin,
+          roast: editingCoffee.roast,
+          price: editingCoffee.price,
+          weight: editingCoffee.weight,
+          description: editingCoffee.description,
+          inStock: editingCoffee.inStock,
+        };
+
+        const updatedCoffee = await updateCoffee(request);
+        setCoffees(
+          coffees.map((c) => (c.id === editingCoffee.id ? updatedCoffee : c))
+        );
+        setIsEditOpen(false);
+        setEditingCoffee(null);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to update coffee"
+        );
+      }
     }
   };
 
-  const handleDelete = (id: number) => {
-    setCoffees(coffees.filter((c) => c.id !== id));
+  const handleDelete = async (id: number) => {
+    try {
+      const request: DeleteCoffeeRequest = { id };
+      await deleteCoffee(request);
+      setCoffees(coffees.filter((c) => c.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete coffee");
+    }
   };
 
-  const generateRandomCoffee = () => {
+  const generateRandomCoffee = async () => {
     const coffeeNames = [
       "Ethiopian Yirgacheffe",
       "Colombian Supremo",
@@ -252,19 +239,39 @@ export default function CoffeesPage() {
     const randomPrice = Math.round((Math.random() * 80 + 15) * 100) / 100; // $15-$95
     const randomInStock = Math.random() > 0.2; // 80% chance of being in stock
 
-    const newCoffee: Coffee = {
-      id: Math.max(...coffees.map((c) => c.id)) + 1,
-      name: randomName,
-      origin: randomOrigin,
-      roast: randomRoast,
-      price: randomPrice,
-      weight: randomWeight,
-      description: randomDescription,
-      inStock: randomInStock,
-    };
+    try {
+      const request: CreateCoffeeRequest = {
+        name: randomName,
+        origin: randomOrigin,
+        roast: randomRoast,
+        price: randomPrice,
+        weight: randomWeight,
+        description: randomDescription,
+        inStock: randomInStock,
+      };
 
-    setCoffees([...coffees, newCoffee]);
+      const createdCoffee = await createCoffee(request);
+      setCoffees([...coffees, createdCoffee]);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to create random coffee"
+      );
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-foreground mb-2">
+            Loading...
+          </div>
+          <div className="text-muted-foreground">Fetching coffee inventory</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -283,18 +290,18 @@ export default function CoffeesPage() {
           <Navigation className="hidden md:flex">
             <NavigationLink
               href="/coffees"
-              className="px-4 py-2 rounded-lg bg-primary/10 text-primary font-medium"
+              className="px-4 py-2 rounded-lg hover:bg-primary/10 transition-all duration-300 font-medium"
             >
               Coffees
             </NavigationLink>
             <NavigationLink
-              href="/#about"
+              href="#about"
               className="px-4 py-2 rounded-lg hover:bg-primary/10 transition-all duration-300 font-medium"
             >
               About
             </NavigationLink>
             <NavigationLink
-              href="/#location"
+              href="#location"
               className="px-4 py-2 rounded-lg hover:bg-primary/10 transition-all duration-300 font-medium"
             >
               Pricing
@@ -308,6 +315,20 @@ export default function CoffeesPage() {
 
       {/* Main Content */}
       <div className="py-8 px-6 max-w-7xl mx-auto">
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-300 rounded-lg text-red-800">
+            Error: {error}
+            <Button
+              onClick={() => setError(null)}
+              className="ml-4"
+              size="sm"
+              variant="outline"
+            >
+              Dismiss
+            </Button>
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-4xl font-bold text-foreground mb-2">
@@ -544,14 +565,14 @@ export default function CoffeesPage() {
             <DialogHeader>
               <DialogTitle>Edit Coffee</DialogTitle>
               <DialogDescription>
-                Update the coffee information.
+                Update the coffee information below.
               </DialogDescription>
             </DialogHeader>
             {editingCoffee && (
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-name" className="text-right">
-                    Name
+                    Name *
                   </Label>
                   <Input
                     id="edit-name"
@@ -567,7 +588,7 @@ export default function CoffeesPage() {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-origin" className="text-right">
-                    Origin
+                    Origin *
                   </Label>
                   <Input
                     id="edit-origin"
@@ -583,7 +604,7 @@ export default function CoffeesPage() {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-price" className="text-right">
-                    Price
+                    Price *
                   </Label>
                   <Input
                     id="edit-price"
@@ -691,15 +712,21 @@ export default function CoffeesPage() {
       </div>
 
       {/* Footer */}
-      <footer className="py-12 px-6 bg-card border-t mt-16">
-        <div className="max-w-7xl mx-auto text-center space-y-4">
-          <div className="w-16 h-1 bg-primary mx-auto rounded-full"></div>
-          <p className="text-lg text-foreground font-medium">
-            © 2025 Cool Beans Coffee Management. All rights reserved.
-          </p>
-          <p className="text-muted-foreground hover:text-primary transition-colors duration-300 cursor-pointer">
-            Follow us on Instagram @coolbeanscoffee
-          </p>
+      <footer className="bg-card border-t border-border/50 py-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-3 mb-4 md:mb-0">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <span className="text-primary-foreground font-bold">☕</span>
+              </div>
+              <span className="text-2xl font-bold text-foreground">
+                Cool Beans
+              </span>
+            </div>
+            <div className="text-muted-foreground text-sm">
+              © 2024 Cool Beans. All rights reserved.
+            </div>
+          </div>
         </div>
       </footer>
     </div>

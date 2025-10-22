@@ -10,6 +10,10 @@
   },
   "dependencies": {
     "@cool-beans/shared": "workspace:*",
+    "@effect/platform": "^0.92.1",
+    "@effect/platform-bun": "^0.81.1",
+    "@effect/rpc": "^0.71.1",
+    "@effect/rpc-http": "^0.52.4",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-select": "^2.2.6",
