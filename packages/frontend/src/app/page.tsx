@@ -13,7 +13,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="py-4 px-6 shadow-lg bg-card border-b">
+      <header className="py-4 px-6 shadow-lg bg-card">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-3xl font-bold text-foreground">Cool Beans</h1>
           <Navigation>
