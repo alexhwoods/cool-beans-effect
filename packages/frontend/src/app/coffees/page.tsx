@@ -63,6 +63,12 @@ export default function CoffeesPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+  const [duplicateError, setDuplicateError] = useState<{
+    attemptedName: string;
+    suggestion: string;
+    coffeeData: CreateCoffeeRequest;
+  } | null>(null);
 
   // Load coffees on component mount
   useEffect(() => {
@@ -118,7 +124,13 @@ export default function CoffeesPage() {
         Effect.catchTags({
           CoffeeAlreadyExists: (err) => {
             return Effect.sync(() => {
-              setError(String(err));
+              // Show duplicate dialog instead of error banner
+              setDuplicateError({
+                attemptedName: err.name,
+                suggestion: err.suggestion,
+                coffeeData: request,
+              });
+              setIsDuplicateDialogOpen(true);
               return null;
             });
           },
@@ -224,6 +236,45 @@ export default function CoffeesPage() {
     }
   };
 
+  const handleAcceptSuggestion = async () => {
+    if (!duplicateError) return;
+
+    const request = {
+      ...duplicateError.coffeeData,
+      name: duplicateError.suggestion,
+    };
+
+    const program = Effect.gen(function* () {
+      const client = yield* makeRpcClient();
+      return yield* client.createCoffee(request);
+    }).pipe(
+      Effect.scoped,
+      Effect.provide(ProtocolLive),
+      Effect.catchAll((err) =>
+        Effect.sync(() => {
+          setError(String(err));
+          return null;
+        })
+      )
+    );
+
+    try {
+      const createdCoffee = await Effect.runPromise(program);
+      if (createdCoffee) {
+        setCoffees([...coffees, createdCoffee]);
+        setIsDuplicateDialogOpen(false);
+        setDuplicateError(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create coffee");
+    }
+  };
+
+  const handleRejectSuggestion = () => {
+    setIsDuplicateDialogOpen(false);
+    setDuplicateError(null);
+  };
+
   const generateRandomCoffee = async () => {
     const coffeeNames = [
       "Ethiopian Yirgacheffe",
@@ -319,27 +370,20 @@ export default function CoffeesPage() {
     }).pipe(
       Effect.scoped,
       Effect.provide(ProtocolLive),
-      Effect.catchAll((err) =>
-        Effect.sync(() => {
-          // Check if the error message contains CoffeeAlreadyExists information
-          const errorStr = String(err);
-          if (errorStr.includes("CoffeeAlreadyExists")) {
-            // Try to extract the coffee name from the error message
-            const nameMatch = errorStr.match(/name[":\s]*"([^"]+)"/);
-            const suggestionMatch = errorStr.match(
-              /suggestion[":\s]*"([^"]+)"/
-            );
-            const name = nameMatch ? nameMatch[1] : "this name";
-            const suggestion = suggestionMatch
-              ? ` Try "${suggestionMatch[1]}" instead.`
-              : "";
-            setError(`A coffee named "${name}" already exists.${suggestion}`);
-          } else {
-            setError(errorStr);
-          }
-          return null;
-        })
-      )
+      Effect.catchTags({
+        CoffeeAlreadyExists: (err) => {
+          return Effect.sync(() => {
+            // Show duplicate dialog instead of error banner
+            setDuplicateError({
+              attemptedName: err.name,
+              suggestion: err.suggestion || `${request.name} 2`,
+              coffeeData: request,
+            });
+            setIsDuplicateDialogOpen(true);
+            return null;
+          });
+        },
+      })
     );
 
     try {
@@ -800,6 +844,61 @@ export default function CoffeesPage() {
             <DialogFooter>
               <Button type="submit" onClick={handleUpdate}>
                 Update Coffee
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Duplicate Coffee Dialog */}
+        <Dialog
+          open={isDuplicateDialogOpen}
+          onOpenChange={setIsDuplicateDialogOpen}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>☕ Coffee Name Already Exists</DialogTitle>
+              <DialogDescription>
+                A coffee with this name already exists. We've suggested an
+                alternative name for you.
+              </DialogDescription>
+            </DialogHeader>
+            {duplicateError && (
+              <div className="py-4">
+                <div className="space-y-4">
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="text-sm font-medium text-red-800 mb-2">
+                      Attempted Name:
+                    </div>
+                    <div className="text-lg font-mono text-red-900 bg-red-100 p-2 rounded">
+                      {duplicateError.attemptedName}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-center">
+                    <div className="text-2xl text-gray-400">↓</div>
+                  </div>
+
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="text-sm font-medium text-green-800 mb-2">
+                      Suggested Name:
+                    </div>
+                    <div className="text-lg font-mono text-green-900 bg-green-100 p-2 rounded">
+                      {duplicateError.suggestion}
+                    </div>
+                  </div>
+
+                  <div className="text-sm text-gray-600 text-center">
+                    Would you like to create the coffee with the suggested name?
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter className="flex gap-2">
+              <Button variant="outline" onClick={handleRejectSuggestion}>
+                Cancel
+              </Button>
+              <Button onClick={handleAcceptSuggestion}>
+                Use Suggested Name
               </Button>
             </DialogFooter>
           </DialogContent>
