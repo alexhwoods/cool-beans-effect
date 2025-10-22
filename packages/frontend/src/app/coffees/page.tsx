@@ -36,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Match } from "effect";
 import {
   Coffee,
   CreateCoffeeRequest,
@@ -115,27 +115,14 @@ export default function CoffeesPage() {
       }).pipe(
         Effect.scoped,
         Effect.provide(ProtocolLive),
-        Effect.catchAll((err) =>
-          Effect.sync(() => {
-            // Check if the error message contains CoffeeAlreadyExists information
-            const errorStr = String(err);
-            if (errorStr.includes("CoffeeAlreadyExists")) {
-              // Try to extract the coffee name from the error message
-              const nameMatch = errorStr.match(/name[":\s]*"([^"]+)"/);
-              const suggestionMatch = errorStr.match(
-                /suggestion[":\s]*"([^"]+)"/
-              );
-              const name = nameMatch ? nameMatch[1] : "this name";
-              const suggestion = suggestionMatch
-                ? ` Try "${suggestionMatch[1]}" instead.`
-                : "";
-              setError(`A coffee named "${name}" already exists.${suggestion}`);
-            } else {
-              setError(errorStr);
-            }
-            return null;
-          })
-        )
+        Effect.catchTags({
+          CoffeeAlreadyExists: (err) => {
+            return Effect.sync(() => {
+              setError(String(err));
+              return null;
+            });
+          },
+        })
       );
 
       try {

@@ -5,6 +5,8 @@ import {
   CreateCoffeeRequest,
   UpdateCoffeeRequest,
   DeleteCoffeeRequest,
+  CoffeeAlreadyExists,
+  CoffeeNotFound,
 } from "./schema";
 
 export const listCoffees = Rpc.make("listCoffees", {
@@ -15,14 +17,17 @@ export const listCoffees = Rpc.make("listCoffees", {
 export const createCoffee = Rpc.make("createCoffee", {
   payload: CreateCoffeeRequest,
   success: Coffee,
+  error: CoffeeAlreadyExists,
 });
 
 export const updateCoffee = Rpc.make("updateCoffee", {
   payload: UpdateCoffeeRequest,
   success: Coffee,
+  error: CoffeeNotFound,
 });
 
 export const deleteCoffee = Rpc.make("deleteCoffee", {
   payload: DeleteCoffeeRequest,
   success: Schema.Void,
+  error: CoffeeNotFound,
 });

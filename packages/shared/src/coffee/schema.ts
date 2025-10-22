@@ -1,15 +1,20 @@
 import { Schema, Data } from "effect";
 
-export class CoffeeNotFound extends Data.TaggedError("CoffeeNotFound")<{
-  readonly id: number;
-}> {}
+// See here https://effect.website/docs/schema/classes/#tagged-class-variants
+export class CoffeeAlreadyExists extends Schema.TaggedError<CoffeeAlreadyExists>()(
+  "CoffeeAlreadyExists",
+  {
+    name: Schema.String,
+    suggestion: Schema.String,
+  }
+) {}
 
-export class CoffeeAlreadyExists extends Data.TaggedError(
-  "CoffeeAlreadyExists"
-)<{
-  readonly name: string;
-  readonly suggestion?: string;
-}> {}
+export class CoffeeNotFound extends Schema.TaggedError<CoffeeNotFound>()(
+  "CoffeeNotFound",
+  {
+    id: Schema.Int,
+  }
+) {}
 
 export class Coffee extends Schema.Class<Coffee>("Coffee")({
   id: Schema.Number,
