@@ -3,6 +3,8 @@ import {
   Coffee,
   CreateCoffeeRequest,
   UpdateCoffeeRequest,
+  CoffeeNotFound,
+  CoffeeAlreadyExists,
 } from "@cool-beans/shared";
 
 export class CoffeeService extends Context.Tag("CoffeeService")<
@@ -11,11 +13,11 @@ export class CoffeeService extends Context.Tag("CoffeeService")<
     readonly listCoffees: () => Effect.Effect<Coffee[]>;
     readonly createCoffee: (
       request: CreateCoffeeRequest
-    ) => Effect.Effect<Coffee>;
+    ) => Effect.Effect<Coffee, CoffeeAlreadyExists>;
     readonly updateCoffee: (
       request: UpdateCoffeeRequest
-    ) => Effect.Effect<Coffee>;
-    readonly deleteCoffee: (id: number) => Effect.Effect<void>;
+    ) => Effect.Effect<Coffee, CoffeeNotFound>;
+    readonly deleteCoffee: (id: number) => Effect.Effect<void, CoffeeNotFound>;
   }
 >() {}
 
@@ -93,6 +95,33 @@ export const CoffeeServiceLive = Effect.gen(function* () {
     createCoffee: (request: CreateCoffeeRequest) =>
       Effect.gen(function* () {
         const coffees = yield* Ref.get(coffeeRef);
+
+        // Check if coffee with this name already exists
+        const existingCoffee = coffees.find(
+          (c) => c.name.toLowerCase() === request.name.toLowerCase()
+        );
+
+        if (existingCoffee) {
+          // Generate a suggestion by appending a number
+          let suggestion = request.name;
+          let counter = 2;
+          while (
+            coffees.some(
+              (c) => c.name.toLowerCase() === suggestion.toLowerCase()
+            )
+          ) {
+            suggestion = `${request.name} ${counter}`;
+            counter++;
+          }
+
+          yield* Effect.fail(
+            new CoffeeAlreadyExists({
+              name: request.name,
+              suggestion,
+            })
+          );
+        }
+
         const newCoffee = new Coffee({
           id: nextId++,
           name: request.name,
@@ -113,9 +142,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         const coffeeIndex = coffees.findIndex((c) => c.id === request.id);
 
         if (coffeeIndex === -1) {
-          yield* Effect.fail(
-            new Error(`Coffee with id ${request.id} not found`)
-          );
+          yield* Effect.fail(new CoffeeNotFound({ id: request.id }));
         }
 
         const updatedCoffee = new Coffee({
@@ -142,7 +169,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         const coffeeExists = coffees.some((c) => c.id === id);
 
         if (!coffeeExists) {
-          yield* Effect.fail(new Error(`Coffee with id ${id} not found`));
+          yield* Effect.fail(new CoffeeNotFound({ id }));
         }
 
         const filteredCoffees = coffees.filter((c) => c.id !== id);

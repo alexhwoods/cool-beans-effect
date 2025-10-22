@@ -1,4 +1,15 @@
-import { Schema } from "effect";
+import { Schema, Data } from "effect";
+
+export class CoffeeNotFound extends Data.TaggedError("CoffeeNotFound")<{
+  readonly id: number;
+}> {}
+
+export class CoffeeAlreadyExists extends Data.TaggedError(
+  "CoffeeAlreadyExists"
+)<{
+  readonly name: string;
+  readonly suggestion?: string;
+}> {}
 
 export class Coffee extends Schema.Class<Coffee>("Coffee")({
   id: Schema.Number,

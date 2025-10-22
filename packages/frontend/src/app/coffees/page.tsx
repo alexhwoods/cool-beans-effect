@@ -42,6 +42,8 @@ import {
   CreateCoffeeRequest,
   UpdateCoffeeRequest,
   DeleteCoffeeRequest,
+  CoffeeNotFound,
+  CoffeeAlreadyExists,
 } from "@cool-beans/shared";
 import { makeRpcClient, ProtocolLive } from "@/rpc-client";
 
@@ -115,7 +117,22 @@ export default function CoffeesPage() {
         Effect.provide(ProtocolLive),
         Effect.catchAll((err) =>
           Effect.sync(() => {
-            setError(String(err));
+            // Check if the error message contains CoffeeAlreadyExists information
+            const errorStr = String(err);
+            if (errorStr.includes("CoffeeAlreadyExists")) {
+              // Try to extract the coffee name from the error message
+              const nameMatch = errorStr.match(/name[":\s]*"([^"]+)"/);
+              const suggestionMatch = errorStr.match(
+                /suggestion[":\s]*"([^"]+)"/
+              );
+              const name = nameMatch ? nameMatch[1] : "this name";
+              const suggestion = suggestionMatch
+                ? ` Try "${suggestionMatch[1]}" instead.`
+                : "";
+              setError(`A coffee named "${name}" already exists.${suggestion}`);
+            } else {
+              setError(errorStr);
+            }
             return null;
           })
         )
@@ -317,7 +334,22 @@ export default function CoffeesPage() {
       Effect.provide(ProtocolLive),
       Effect.catchAll((err) =>
         Effect.sync(() => {
-          setError(String(err));
+          // Check if the error message contains CoffeeAlreadyExists information
+          const errorStr = String(err);
+          if (errorStr.includes("CoffeeAlreadyExists")) {
+            // Try to extract the coffee name from the error message
+            const nameMatch = errorStr.match(/name[":\s]*"([^"]+)"/);
+            const suggestionMatch = errorStr.match(
+              /suggestion[":\s]*"([^"]+)"/
+            );
+            const name = nameMatch ? nameMatch[1] : "this name";
+            const suggestion = suggestionMatch
+              ? ` Try "${suggestionMatch[1]}" instead.`
+              : "";
+            setError(`A coffee named "${name}" already exists.${suggestion}`);
+          } else {
+            setError(errorStr);
+          }
           return null;
         })
       )
