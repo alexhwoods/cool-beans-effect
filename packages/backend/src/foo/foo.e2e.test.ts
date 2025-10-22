@@ -142,20 +142,19 @@ describe("Foo RPC E2E", () => {
     expect(result[result.length - 1]).toContain("real-time text generation");
   });
 
-  test.only(
+  // with a Sink
+  test(
     "getFooResponse should log chunks as they stream in",
     async () => {
-      const x = await Effect.gen(function* () {
+      await Effect.gen(function* () {
         const client = yield* RpcClient.make(AllRpcs);
 
         // Stream text and log each chunk as it arrives
-        return yield* Stream.run(
+        const x = yield* Stream.run(
           client.getFooResponse(),
-          Sink.foldLeft("", (a, b) => a + b)
+          Sink.foldLeft("", (_, b) => b)
         );
-      }).pipe(Effect.scoped, Effect.provide(ProtocolLive));
-
-      console.log("x: ", x);
+      }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
     },
     { timeout: 30 * 1000 }
   );
