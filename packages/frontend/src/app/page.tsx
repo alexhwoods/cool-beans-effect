@@ -41,53 +41,59 @@ export default function Home() {
           Our Specialties
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
-          {/* Card 1 - Space for Coffee Photo */}
+          {/* Card 1 - Spilled Beans */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-            <div className="h-64 bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
-              {/* Placeholder for coffee image */}
-              <div className="text-white text-center">
-                <p className="text-sm opacity-75">Photo space</p>
-                <p className="text-lg font-semibold">Artisan Espresso</p>
-              </div>
+            <div className="relative h-64 w-full">
+              <Image
+                src="/spilled-beans.avif"
+                alt="Fresh Coffee Beans"
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
             </div>
             <div className="p-6">
-              <h3 className="text-2xl font-bold text-amber-900 mb-2">Artisan Espresso</h3>
+              <h3 className="text-2xl font-bold text-amber-900 mb-2">Fresh Roasted Beans</h3>
               <p className="text-gray-700">
-                Rich, bold, and perfectly balanced. Our signature espresso blend from single-origin beans.
+                Small-batch roasting ensures peak freshness and flavor in every cup.
               </p>
             </div>
           </div>
 
-          {/* Card 2 - Space for Coffee Photo */}
+          {/* Card 2 - Local Businesses */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-            <div className="h-64 bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center">
-              {/* Placeholder for latte art image */}
-              <div className="text-white text-center">
-                <p className="text-sm opacity-75">Photo space</p>
-                <p className="text-lg font-semibold">Latte Art</p>
-              </div>
+            <div className="relative h-64 w-full">
+              <Image
+                src="/local-businesses.avif"
+                alt="Supporting Local Businesses"
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
             </div>
             <div className="p-6">
-              <h3 className="text-2xl font-bold text-amber-900 mb-2">Handcrafted Lattes</h3>
+              <h3 className="text-2xl font-bold text-amber-900 mb-2">Community First</h3>
               <p className="text-gray-700">
-                Creamy, smooth, and beautifully presented. Each cup is a work of art.
+                Supporting local farmers and roasters. Every cup helps our community thrive.
               </p>
             </div>
           </div>
 
-          {/* Card 3 - Space for Coffee Photo */}
+          {/* Card 3 - Iced Coffee */}
           <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-            <div className="h-64 bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center">
-              {/* Placeholder for cold brew image */}
-              <div className="text-white text-center">
-                <p className="text-sm opacity-75">Photo space</p>
-                <p className="text-lg font-semibold">Cold Brew</p>
-              </div>
+            <div className="relative h-64 w-full">
+              <Image
+                src="/iced-coffee.avif"
+                alt="Iced Coffee"
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
             </div>
             <div className="p-6">
-              <h3 className="text-2xl font-bold text-amber-900 mb-2">Cold Brew</h3>
+              <h3 className="text-2xl font-bold text-amber-900 mb-2">Iced Coffee</h3>
               <p className="text-gray-700">
-                Smooth and refreshing. Steeped for 16 hours for maximum flavor with minimal acidity.
+                Smooth and refreshing. Perfect for warm days and cool vibes.
               </p>
             </div>
           </div>
@@ -112,12 +118,14 @@ export default function Home() {
               afternoon of work, Cool Beans is your home away from home.
             </p>
           </div>
-          <div className="h-96 bg-gradient-to-br from-amber-200 to-amber-400 rounded-lg flex items-center justify-center">
-            {/* Placeholder for shop interior photo */}
-            <div className="text-amber-900 text-center">
-              <p className="text-sm opacity-75">Photo space</p>
-              <p className="text-lg font-semibold">Shop Interior</p>
-            </div>
+          <div className="relative h-96 w-full rounded-lg overflow-hidden">
+            <Image
+              src="/shop-interior.avif"
+              alt="Cool Beans Shop Interior"
+              fill
+              className="object-cover object-center"
+              sizes="(max-width: 768px) 100vw, 50vw"
+            />
           </div>
         </div>
       </section>
