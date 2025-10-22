@@ -10,6 +10,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Custom Coffee Shop Colors */
+  --color-driftwood-tan: #c8a97e;
+  --color-dark-cocoa: #3b2f2f;
+  --color-sea-mist-gray: #d9e3e8;
+  --color-copper-coral: #b56e46;
+  --color-copper-coral-hover: #a05a3a;
 }
 
 @media (prefers-color-scheme: dark) {
