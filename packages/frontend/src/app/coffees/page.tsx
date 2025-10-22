@@ -18,24 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { CreateCoffeeDialog } from "./components/create-coffee-dialog";
+import { EditCoffeeDialog } from "./components/edit-coffee-dialog";
+import { DuplicateCoffeeDialog } from "./components/duplicate-coffee-dialog";
 import { Effect, Layer, Match } from "effect";
 import {
   Coffee,
@@ -52,15 +37,6 @@ export default function CoffeesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingCoffee, setEditingCoffee] = useState<Coffee | null>(null);
-  const [newCoffee, setNewCoffee] = useState<Partial<Coffee>>({
-    name: "",
-    origin: "",
-    roast: "Medium",
-    price: 0,
-    weight: "12oz",
-    description: "",
-    inStock: true,
-  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
@@ -103,61 +79,17 @@ export default function CoffeesPage() {
     }
   };
 
-  const handleCreate = async () => {
-    if (newCoffee.name && newCoffee.origin && newCoffee.price) {
-      const request: CreateCoffeeRequest = {
-        name: newCoffee.name,
-        origin: newCoffee.origin,
-        roast: newCoffee.roast || "Medium",
-        price: newCoffee.price,
-        weight: newCoffee.weight || "12oz",
-        description: newCoffee.description || "",
-        inStock: newCoffee.inStock ?? true,
-      };
+  const handleCoffeeCreated = (coffee: Coffee) => {
+    setCoffees([...coffees, coffee]);
+  };
 
-      const program = Effect.gen(function* () {
-        const client = yield* makeRpcClient();
-        return yield* client.createCoffee(request);
-      }).pipe(
-        Effect.scoped,
-        Effect.provide(ProtocolLive),
-        Effect.catchTags({
-          CoffeeAlreadyExists: (err) => {
-            return Effect.sync(() => {
-              // Show duplicate dialog instead of error banner
-              setDuplicateError({
-                attemptedName: err.name,
-                suggestion: err.suggestion,
-                coffeeData: request,
-              });
-              setIsDuplicateDialogOpen(true);
-              return null;
-            });
-          },
-        })
-      );
-
-      try {
-        const createdCoffee = await Effect.runPromise(program);
-        if (createdCoffee) {
-          setCoffees([...coffees, createdCoffee]);
-          setNewCoffee({
-            name: "",
-            origin: "",
-            roast: "Medium",
-            price: 0,
-            weight: "12oz",
-            description: "",
-            inStock: true,
-          });
-          setIsCreateOpen(false);
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to create coffee"
-        );
-      }
-    }
+  const handleDuplicateError = (error: {
+    attemptedName: string;
+    suggestion: string;
+    coffeeData: CreateCoffeeRequest;
+  }) => {
+    setDuplicateError(error);
+    setIsDuplicateDialogOpen(true);
   };
 
   const handleEdit = (coffee: Coffee) => {
@@ -165,48 +97,10 @@ export default function CoffeesPage() {
     setIsEditOpen(true);
   };
 
-  const handleUpdate = async () => {
-    if (editingCoffee) {
-      const request: UpdateCoffeeRequest = {
-        id: editingCoffee.id,
-        name: editingCoffee.name,
-        origin: editingCoffee.origin,
-        roast: editingCoffee.roast,
-        price: editingCoffee.price,
-        weight: editingCoffee.weight,
-        description: editingCoffee.description,
-        inStock: editingCoffee.inStock,
-      };
-
-      const program = Effect.gen(function* () {
-        const client = yield* makeRpcClient();
-        return yield* client.updateCoffee(request);
-      }).pipe(
-        Effect.scoped,
-        Effect.provide(ProtocolLive),
-        Effect.catchAll((err) =>
-          Effect.sync(() => {
-            setError(String(err));
-            return null;
-          })
-        )
-      );
-
-      try {
-        const updatedCoffee = await Effect.runPromise(program);
-        if (updatedCoffee) {
-          setCoffees(
-            coffees.map((c) => (c.id === editingCoffee.id ? updatedCoffee : c))
-          );
-          setIsEditOpen(false);
-          setEditingCoffee(null);
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to update coffee"
-        );
-      }
-    }
+  const handleCoffeeUpdated = (coffee: Coffee) => {
+    setCoffees(coffees.map((c) => (c.id === coffee.id ? coffee : c)));
+    setIsEditOpen(false);
+    setEditingCoffee(null);
   };
 
   const handleDelete = async (id: number) => {
@@ -236,41 +130,7 @@ export default function CoffeesPage() {
     }
   };
 
-  const handleAcceptSuggestion = async () => {
-    if (!duplicateError) return;
-
-    const request = {
-      ...duplicateError.coffeeData,
-      name: duplicateError.suggestion,
-    };
-
-    const program = Effect.gen(function* () {
-      const client = yield* makeRpcClient();
-      return yield* client.createCoffee(request);
-    }).pipe(
-      Effect.scoped,
-      Effect.provide(ProtocolLive),
-      Effect.catchAll((err) =>
-        Effect.sync(() => {
-          setError(String(err));
-          return null;
-        })
-      )
-    );
-
-    try {
-      const createdCoffee = await Effect.runPromise(program);
-      if (createdCoffee) {
-        setCoffees([...coffees, createdCoffee]);
-        setIsDuplicateDialogOpen(false);
-        setDuplicateError(null);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create coffee");
-    }
-  };
-
-  const handleRejectSuggestion = () => {
+  const handleDuplicateDialogClose = () => {
     setIsDuplicateDialogOpen(false);
     setDuplicateError(null);
   };
@@ -374,12 +234,11 @@ export default function CoffeesPage() {
         CoffeeAlreadyExists: (err) => {
           return Effect.sync(() => {
             // Show duplicate dialog instead of error banner
-            setDuplicateError({
+            handleDuplicateError({
               attemptedName: err.name,
               suggestion: err.suggestion || `${request.name} 2`,
               coffeeData: request,
             });
-            setIsDuplicateDialogOpen(true);
             return null;
           });
         },
@@ -389,7 +248,7 @@ export default function CoffeesPage() {
     try {
       const createdCoffee = await Effect.runPromise(program);
       if (createdCoffee) {
-        setCoffees([...coffees, createdCoffee]);
+        handleCoffeeCreated(createdCoffee);
       }
     } catch (err) {
       setError(
@@ -485,156 +344,12 @@ export default function CoffeesPage() {
             >
               🎲 Generate Random
             </Button>
-            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90">
-                  + Add Coffee
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add New Coffee</DialogTitle>
-                  <DialogDescription>
-                    Create a new coffee entry with minimal required information.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                      Name *
-                    </Label>
-                    <Input
-                      id="name"
-                      value={newCoffee.name}
-                      onChange={(e) =>
-                        setNewCoffee({ ...newCoffee, name: e.target.value })
-                      }
-                      className="col-span-3"
-                      placeholder="Coffee name"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="origin" className="text-right">
-                      Origin *
-                    </Label>
-                    <Input
-                      id="origin"
-                      value={newCoffee.origin}
-                      onChange={(e) =>
-                        setNewCoffee({ ...newCoffee, origin: e.target.value })
-                      }
-                      className="col-span-3"
-                      placeholder="Country/Region"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="price" className="text-right">
-                      Price *
-                    </Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      value={newCoffee.price}
-                      onChange={(e) =>
-                        setNewCoffee({
-                          ...newCoffee,
-                          price: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      className="col-span-3"
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="roast" className="text-right">
-                      Roast
-                    </Label>
-                    <Select
-                      value={newCoffee.roast}
-                      onValueChange={(value) =>
-                        setNewCoffee({ ...newCoffee, roast: value })
-                      }
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Light">Light</SelectItem>
-                        <SelectItem value="Medium">Medium</SelectItem>
-                        <SelectItem value="Medium-Dark">Medium-Dark</SelectItem>
-                        <SelectItem value="Dark">Dark</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="weight" className="text-right">
-                      Weight
-                    </Label>
-                    <Select
-                      value={newCoffee.weight}
-                      onValueChange={(value) =>
-                        setNewCoffee({ ...newCoffee, weight: value })
-                      }
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="8oz">8oz</SelectItem>
-                        <SelectItem value="10oz">10oz</SelectItem>
-                        <SelectItem value="12oz">12oz</SelectItem>
-                        <SelectItem value="16oz">16oz</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="description" className="text-right">
-                      Description
-                    </Label>
-                    <Input
-                      id="description"
-                      value={newCoffee.description}
-                      onChange={(e) =>
-                        setNewCoffee({
-                          ...newCoffee,
-                          description: e.target.value,
-                        })
-                      }
-                      className="col-span-3"
-                      placeholder="Flavor notes (optional)"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="inStock" className="text-right">
-                      In Stock
-                    </Label>
-                    <Select
-                      value={newCoffee.inStock?.toString()}
-                      onValueChange={(value) =>
-                        setNewCoffee({
-                          ...newCoffee,
-                          inStock: value === "true",
-                        })
-                      }
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="true">Yes</SelectItem>
-                        <SelectItem value="false">No</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit" onClick={handleCreate}>
-                    Add Coffee
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button
+              onClick={() => setIsCreateOpen(true)}
+              className="bg-primary hover:bg-primary/90"
+            >
+              + Add Coffee
+            </Button>
           </div>
         </div>
 
@@ -698,211 +413,29 @@ export default function CoffeesPage() {
           </Table>
         </Card>
 
-        {/* Edit Dialog */}
-        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit Coffee</DialogTitle>
-              <DialogDescription>
-                Update the coffee information below.
-              </DialogDescription>
-            </DialogHeader>
-            {editingCoffee && (
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-name" className="text-right">
-                    Name *
-                  </Label>
-                  <Input
-                    id="edit-name"
-                    value={editingCoffee.name}
-                    onChange={(e) =>
-                      setEditingCoffee({
-                        ...editingCoffee,
-                        name: e.target.value,
-                      })
-                    }
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-origin" className="text-right">
-                    Origin *
-                  </Label>
-                  <Input
-                    id="edit-origin"
-                    value={editingCoffee.origin}
-                    onChange={(e) =>
-                      setEditingCoffee({
-                        ...editingCoffee,
-                        origin: e.target.value,
-                      })
-                    }
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-price" className="text-right">
-                    Price *
-                  </Label>
-                  <Input
-                    id="edit-price"
-                    type="number"
-                    step="0.01"
-                    value={editingCoffee.price}
-                    onChange={(e) =>
-                      setEditingCoffee({
-                        ...editingCoffee,
-                        price: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-roast" className="text-right">
-                    Roast
-                  </Label>
-                  <Select
-                    value={editingCoffee.roast}
-                    onValueChange={(value) =>
-                      setEditingCoffee({ ...editingCoffee, roast: value })
-                    }
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Light">Light</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Medium-Dark">Medium-Dark</SelectItem>
-                      <SelectItem value="Dark">Dark</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-weight" className="text-right">
-                    Weight
-                  </Label>
-                  <Select
-                    value={editingCoffee.weight}
-                    onValueChange={(value) =>
-                      setEditingCoffee({ ...editingCoffee, weight: value })
-                    }
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="8oz">8oz</SelectItem>
-                      <SelectItem value="10oz">10oz</SelectItem>
-                      <SelectItem value="12oz">12oz</SelectItem>
-                      <SelectItem value="16oz">16oz</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-description" className="text-right">
-                    Description
-                  </Label>
-                  <Input
-                    id="edit-description"
-                    value={editingCoffee.description}
-                    onChange={(e) =>
-                      setEditingCoffee({
-                        ...editingCoffee,
-                        description: e.target.value,
-                      })
-                    }
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-inStock" className="text-right">
-                    In Stock
-                  </Label>
-                  <Select
-                    value={editingCoffee.inStock.toString()}
-                    onValueChange={(value) =>
-                      setEditingCoffee({
-                        ...editingCoffee,
-                        inStock: value === "true",
-                      })
-                    }
-                  >
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Yes</SelectItem>
-                      <SelectItem value="false">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button type="submit" onClick={handleUpdate}>
-                Update Coffee
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {/* Dialog Components */}
+        <CreateCoffeeDialog
+          isOpen={isCreateOpen}
+          onOpenChange={setIsCreateOpen}
+          onCoffeeCreated={handleCoffeeCreated}
+          onDuplicateError={handleDuplicateError}
+        />
 
-        {/* Duplicate Coffee Dialog */}
-        <Dialog
-          open={isDuplicateDialogOpen}
-          onOpenChange={setIsDuplicateDialogOpen}
-        >
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>☕ Coffee Name Already Exists</DialogTitle>
-              <DialogDescription>
-                A coffee with this name already exists. We've suggested an
-                alternative name for you.
-              </DialogDescription>
-            </DialogHeader>
-            {duplicateError && (
-              <div className="py-4">
-                <div className="space-y-4">
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="text-sm font-medium text-red-800 mb-2">
-                      Attempted Name:
-                    </div>
-                    <div className="text-lg font-mono text-red-900 bg-red-100 p-2 rounded">
-                      {duplicateError.attemptedName}
-                    </div>
-                  </div>
+        <EditCoffeeDialog
+          isOpen={isEditOpen}
+          onOpenChange={setIsEditOpen}
+          coffee={editingCoffee}
+          onCoffeeUpdated={handleCoffeeUpdated}
+          onError={setError}
+        />
 
-                  <div className="flex items-center justify-center">
-                    <div className="text-2xl text-gray-400">↓</div>
-                  </div>
-
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="text-sm font-medium text-green-800 mb-2">
-                      Suggested Name:
-                    </div>
-                    <div className="text-lg font-mono text-green-900 bg-green-100 p-2 rounded">
-                      {duplicateError.suggestion}
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-gray-600 text-center">
-                    Would you like to create the coffee with the suggested name?
-                  </div>
-                </div>
-              </div>
-            )}
-            <DialogFooter className="flex gap-2">
-              <Button variant="outline" onClick={handleRejectSuggestion}>
-                Cancel
-              </Button>
-              <Button onClick={handleAcceptSuggestion}>
-                Use Suggested Name
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <DuplicateCoffeeDialog
+          isOpen={isDuplicateDialogOpen}
+          onOpenChange={handleDuplicateDialogClose}
+          duplicateError={duplicateError}
+          onCoffeeCreated={handleCoffeeCreated}
+          onError={setError}
+        />
       </div>
 
       {/* Footer */}

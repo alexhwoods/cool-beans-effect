@@ -94,13 +94,6 @@ export const CoffeeServiceLive = Effect.gen(function* () {
 
     createCoffee: (request: CreateCoffeeRequest) =>
       Effect.gen(function* () {
-        return yield* Effect.fail(
-          new CoffeeAlreadyExists({
-            name: request.name,
-            suggestion: "Try a different name",
-          })
-        );
-
         const coffees = yield* Ref.get(coffeeRef);
 
         // Check if coffee with this name already exists
