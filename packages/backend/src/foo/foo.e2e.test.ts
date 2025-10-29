@@ -47,29 +47,25 @@ describe("Foo RPC E2E", () => {
       });
     }).pipe(Effect.scoped, Effect.provide(ProtocolLive))
   );
-  // test(
-  //   "streamFoo should stream items incrementally",
-  //   async () => {
-  //     const result = await Effect.gen(function* () {
-  //       const client = yield* RpcClient.make(AllRpcs);
-  //       const items: any[] = [];
 
-  //       // Collect items as they stream in
-  //       yield* Stream.runForEach(client.streamFoo(), (foo) =>
-  //         Effect.sync(() => items.push(foo))
-  //       );
+  test.effect("streamFoo should stream items incrementally", () =>
+    Effect.gen(function* () {
+      // Arrange
+      const client = yield* RpcClient.make(AllRpcs);
+      const items: any[] = [];
 
-  //       return items;
-  //     }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+      // Act
+      yield* Stream.runForEach(client.streamFoo(), (foo) =>
+        Effect.sync(() => items.push(foo))
+      );
 
-  //     // Verify all items were streamed
-  //     expect(result).toHaveLength(9);
-  //     expect(
-  //       result.every((item) => item.id && item.name && item.description)
-  //     ).toBe(true);
-  //   },
-  //   { timeout: 20 * 1000 }
-  // );
+      // Assert
+      expect(items).toHaveLength(9);
+      expect(
+        items.every((item) => item.id && item.name && item.description)
+      ).toBe(true);
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive))
+  );
 
   // test(
   //   "streamFoo should log items as they stream in",
