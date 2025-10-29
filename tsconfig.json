@@ -25,18 +25,9 @@
         "name": "@effect/language-service"
       }
     ],
-    "baseUrl": ".",
-    "paths": {
-      "@cool-beans/shared": ["./packages/shared/src"],
-      "@cool-beans/backend": ["./packages/backend/src"],
-      "@cool-beans/frontend": ["./packages/frontend/src"]
-    }
+    "baseUrl": "."
   },
-  "include": [
-    "packages/*/src/**/*",
-    "packages/*/next-env.d.ts",
-    "packages/*/.next/types/**/*"
-  ],
+  "include": [],
   "exclude": [
     "node_modules",
     "packages/*/node_modules",

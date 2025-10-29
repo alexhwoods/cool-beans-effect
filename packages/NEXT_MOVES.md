@@ -1,0 +1,4 @@
+- [ ] Tanstack Start?
+- [ ] Effect Atom?
+- [ ] Clean up our streaming example
+- [ ] Add a coffee AI feature
