@@ -25,8 +25,8 @@ export const FooServiceLive = Layer.succeed(FooService, {
     ]).pipe(
       Stream.tap(() =>
         Effect.gen(function* () {
-          // Add random jitter between 200ms and 2000ms
-          const jitter = yield* Random.nextIntBetween(200, 2000);
+          // Increase for dramatic effect
+          const jitter = yield* Random.nextIntBetween(1, 20);
           yield* Effect.sleep(`${jitter} millis`);
         })
       )
