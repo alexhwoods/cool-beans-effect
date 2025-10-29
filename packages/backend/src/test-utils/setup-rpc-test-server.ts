@@ -1,7 +1,8 @@
 import { FetchHttpClient, HttpRouter } from "@effect/platform";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
 import { RpcClient, RpcSerialization, RpcServer } from "@effect/rpc";
-import { Layer } from "effect";
+import { Effect, Layer } from "effect";
+import { AllRpcs } from "@cool-beans/shared";
 import { RpcLayerLive } from "../rpc";
 import { corsMiddleware } from "../middleware/cors.middleware";
 import { findOpenPortInRange } from "./find-port-in-range";
@@ -59,4 +60,22 @@ export async function setupRpcTestServer(): Promise<
       RpcSerialization.layerNdjson,
     ])
   );
+}
+
+/**
+ * RPC Client service that can be injected into tests.
+ */
+export class RpcClientLive extends Effect.Service<RpcClientLive>()(
+  "RpcClientLive",
+  {
+    scoped: RpcClient.make(AllRpcs),
+  }
+) {}
+
+export async function createRpcClientLayer() {
+  const protocolLive = await setupRpcTestServer();
+  return Layer.scoped(
+    RpcClientLive,
+    RpcClient.make(AllRpcs).pipe(Effect.map((client) => client as any))
+  ).pipe(Layer.provide(protocolLive));
 }
