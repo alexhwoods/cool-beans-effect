@@ -84,63 +84,20 @@ describe("Foo RPC E2E", () => {
     }).pipe(Effect.scoped, Effect.provide(ProtocolLive))
   );
 
-  // test("getFooResponse should stream complete text", async () => {
-  //   const result = await Effect.gen(function* () {
-  //     const client = yield* RpcClient.make(AllRpcs);
-  //     return yield* Stream.runCollect(client.getFooResponse()).pipe(
-  //       Effect.map((chunks) => Array.from(chunks))
-  //     );
-  //   }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
+  test.effect("getFooResponse should stream complete text", () =>
+    Effect.gen(function* () {
+      // Arrange
+      const client = yield* RpcClient.make(AllRpcs);
 
-  //   // The last chunk should contain the complete paragraph
-  //   const lastChunk = result[result.length - 1];
-  //   expect(lastChunk).toContain("The quick brown fox jumps over the lazy dog");
-  //   expect(lastChunk).toContain("streaming capabilities");
-  //   expect(lastChunk).toContain("real-time text generation");
+      // Act
+      const text = yield* client
+        .getFooResponse()
+        .pipe(Stream.run(Sink.foldLeft("", (_, b) => b)));
 
-  //   // Should have received multiple chunks
-  //   expect(result.length).toBeGreaterThan(1);
-  // });
-
-  // test("getFooResponse should stream text incrementally", async () => {
-  //   const result = await Effect.gen(function* () {
-  //     const client = yield* RpcClient.make(AllRpcs);
-  //     const chunks: string[] = [];
-
-  //     // Collect chunks as they stream in
-  //     yield* Stream.runForEach(client.getFooResponse(), (chunk) =>
-  //       Effect.sync(() => chunks.push(chunk))
-  //     );
-
-  //     return chunks;
-  //   }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
-
-  //   // Each chunk should be longer than the previous (accumulating words)
-  //   for (let i = 1; i < result.length; i++) {
-  //     expect(result[i].length).toBeGreaterThan(result[i - 1].length);
-  //   }
-
-  //   // First chunk should be short
-  //   expect(result[0].split(" ").length).toBeLessThan(5);
-
-  //   // Last chunk should contain the full text
-  //   expect(result[result.length - 1]).toContain("real-time text generation");
-  // });
-
-  // // with a Sink
-  // test(
-  //   "getFooResponse should log chunks as they stream in",
-  //   async () => {
-  //     await Effect.gen(function* () {
-  //       const client = yield* RpcClient.make(AllRpcs);
-
-  //       // Stream text and log each chunk as it arrives
-  //       const x = yield* Stream.run(
-  //         client.getFooResponse(),
-  //         Sink.foldLeft("", (_, b) => b)
-  //       );
-  //     }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
-  //   },
-  //   { timeout: 30 * 1000 }
-  // );
+      // Assert
+      expect(text).toBe(
+        "The quick brown fox jumps over the lazy dog. This is a sample paragraph that will be streamed slowly to demonstrate the streaming capabilities of the RPC framework. Each word appears with a small delay to simulate real-time text generation."
+      );
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive))
+  );
 });

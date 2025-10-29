@@ -1,3 +1,4 @@
+- [ ] Can't do test.only
 - [ ] Tanstack Start?
 - [ ] Effect Atom?
 - [ ] Clean up our streaming example
