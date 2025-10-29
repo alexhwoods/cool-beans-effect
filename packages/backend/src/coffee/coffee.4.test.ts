@@ -1,41 +1,14 @@
-import { FetchHttpClient, HttpRouter } from "@effect/platform";
-import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
-import { RpcClient, RpcSerialization, RpcServer } from "@effect/rpc";
-import { Effect, Either, Layer, Option } from "effect";
-import { RpcLayerLive } from "../rpc";
-import { corsMiddleware } from "../middleware/cors.middleware";
+import { RpcClient } from "@effect/rpc";
+import { Effect, Either, Option } from "effect";
 import { beforeAll, describe, expect } from "bun:test";
-import { findOpenPortInRange } from "../test-utils/find-port-in-range";
 import { test } from "../test-utils/bun-test";
+import { setupRpcTestServer } from "../test-utils/setup-rpc-test-server";
 import { AllRpcs } from "@cool-beans/shared";
 
-let port: number;
 let ProtocolLive: ReturnType<typeof RpcClient.layerProtocolHttp>;
 
 beforeAll(async () => {
-  port = await findOpenPortInRange(8000, 12000);
-  const Main = HttpRouter.Default.serve(corsMiddleware).pipe(
-    Layer.provide(RpcLayerLive),
-    Layer.provide(
-      RpcServer.layerProtocolHttp({
-        path: "/rpc",
-      }).pipe(Layer.provide(RpcSerialization.layerNdjson))
-    ),
-    Layer.provide(BunHttpServer.layer({ port }))
-  );
-
-  BunRuntime.runMain(Layer.launch(Main));
-
-  ProtocolLive = RpcClient.layerProtocolHttp({
-    url: `http://localhost:${port}/rpc`,
-  }).pipe(
-    Layer.provide([
-      // use fetch for http requests
-      FetchHttpClient.layer,
-      // use ndjson for serialization
-      RpcSerialization.layerNdjson,
-    ])
-  );
+  ProtocolLive = await setupRpcTestServer();
 });
 
 describe("listCoffees RPC (bun)", () => {
