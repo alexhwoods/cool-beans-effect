@@ -35,7 +35,7 @@ import { findOpenPortInRange } from "./find-port-in-range";
 export async function setupRpcTestServer(): Promise<
   ReturnType<typeof RpcClient.layerProtocolHttp>
 > {
-  const port = await findOpenPortInRange(8000, 12000);
+  const port = await findOpenPortInRange(8001, 12000);
 
   const Main = HttpRouter.Default.serve(corsMiddleware).pipe(
     Layer.provide(RpcLayerLive),
