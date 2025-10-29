@@ -90,11 +90,14 @@ export const CoffeeServiceLive = Effect.gen(function* () {
   let nextId = Math.max(...initialCoffees.map((c) => c.id)) + 1;
 
   return CoffeeService.of({
-    listCoffees: () => Ref.get(coffeeRef),
+    listCoffees: () =>
+      Ref.get(coffeeRef).pipe(Effect.withSpan("coffee.service.listCoffees")),
 
     createCoffee: (request: CreateCoffeeRequest) =>
       Effect.gen(function* () {
-        const coffees = yield* Ref.get(coffeeRef);
+        const coffees = yield* Ref.get(coffeeRef).pipe(
+          Effect.withSpan("coffee.service.createCoffee.checkExisting")
+        );
 
         // Check if coffee with this name already exists
         const existingCoffee = coffees.find(
@@ -102,78 +105,149 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         );
 
         if (existingCoffee) {
-          // Generate a suggestion by appending a number
-          let suggestion = request.name;
-          let counter = 2;
-          while (
-            coffees.some(
-              (c) => c.name.toLowerCase() === suggestion.toLowerCase()
+          yield* Effect.withSpan(
+            "coffee.service.createCoffee.generateSuggestion"
+          )(
+            Effect.gen(function* () {
+              // Generate a suggestion by appending a number
+              let suggestion = request.name;
+              let counter = 2;
+              while (
+                coffees.some(
+                  (c) => c.name.toLowerCase() === suggestion.toLowerCase()
+                )
+              ) {
+                suggestion = `${request.name} ${counter}`;
+                counter++;
+              }
+              return suggestion;
+            })
+          ).pipe(
+            Effect.flatMap((suggestion) =>
+              Effect.fail(
+                new CoffeeAlreadyExists({
+                  name: request.name,
+                  suggestion,
+                })
+              )
             )
-          ) {
-            suggestion = `${request.name} ${counter}`;
-            counter++;
-          }
+          );
+        }
 
-          yield* Effect.fail(
-            new CoffeeAlreadyExists({
+        const newCoffee = yield* Effect.withSpan(
+          "coffee.service.createCoffee.createNew",
+          {
+            attributes: {
+              "coffee.name": request.name,
+              "coffee.origin": request.origin,
+              "coffee.roast": request.roast,
+              "coffee.price": request.price,
+            },
+          }
+        )(
+          Effect.gen(function* () {
+            const coffee = new Coffee({
+              id: nextId++,
               name: request.name,
-              suggestion,
+              origin: request.origin,
+              roast: request.roast,
+              price: request.price,
+              weight: request.weight,
+              description: request.description,
+              inStock: request.inStock,
+            });
+            yield* Ref.set(coffeeRef, [...coffees, coffee]);
+            return coffee;
+          })
+        );
+
+        return newCoffee;
+      }).pipe(
+        Effect.withSpan("coffee.service.createCoffee", {
+          attributes: { "coffee.name": request.name },
+        })
+      ),
+
+    updateCoffee: (request: UpdateCoffeeRequest) =>
+      Effect.gen(function* () {
+        const coffees = yield* Ref.get(coffeeRef).pipe(
+          Effect.withSpan("coffee.service.updateCoffee.findCoffee")
+        );
+
+        const coffeeIndex = coffees.findIndex((c) => c.id === request.id);
+
+        if (coffeeIndex === -1) {
+          yield* Effect.fail(new CoffeeNotFound({ id: request.id })).pipe(
+            Effect.withSpan("coffee.service.updateCoffee.coffeeNotFound", {
+              attributes: { "coffee.id": request.id },
             })
           );
         }
 
-        const newCoffee = new Coffee({
-          id: nextId++,
-          name: request.name,
-          origin: request.origin,
-          roast: request.roast,
-          price: request.price,
-          weight: request.weight,
-          description: request.description,
-          inStock: request.inStock,
-        });
-        yield* Ref.set(coffeeRef, [...coffees, newCoffee]);
-        return newCoffee;
-      }),
+        const updatedCoffee = yield* Effect.withSpan(
+          "coffee.service.updateCoffee.update",
+          {
+            attributes: {
+              "coffee.id": request.id,
+              "coffee.name": request.name,
+            },
+          }
+        )(
+          Effect.gen(function* () {
+            const coffee = new Coffee({
+              id: request.id,
+              name: request.name,
+              origin: request.origin,
+              roast: request.roast,
+              price: request.price,
+              weight: request.weight,
+              description: request.description,
+              inStock: request.inStock,
+            });
 
-    updateCoffee: (request: UpdateCoffeeRequest) =>
-      Effect.gen(function* () {
-        const coffees = yield* Ref.get(coffeeRef);
-        const coffeeIndex = coffees.findIndex((c) => c.id === request.id);
+            const updatedCoffees = [...coffees];
+            updatedCoffees[coffeeIndex] = coffee;
+            yield* Ref.set(coffeeRef, updatedCoffees);
 
-        if (coffeeIndex === -1) {
-          yield* Effect.fail(new CoffeeNotFound({ id: request.id }));
-        }
-
-        const updatedCoffee = new Coffee({
-          id: request.id,
-          name: request.name,
-          origin: request.origin,
-          roast: request.roast,
-          price: request.price,
-          weight: request.weight,
-          description: request.description,
-          inStock: request.inStock,
-        });
-
-        const updatedCoffees = [...coffees];
-        updatedCoffees[coffeeIndex] = updatedCoffee;
-        yield* Ref.set(coffeeRef, updatedCoffees);
+            return coffee;
+          })
+        );
 
         return updatedCoffee;
-      }),
+      }).pipe(
+        Effect.withSpan("coffee.service.updateCoffee", {
+          attributes: { "coffee.id": request.id },
+        })
+      ),
 
     deleteCoffee: (id: number) =>
       Effect.gen(function* () {
-        const coffees = yield* Ref.get(coffeeRef);
+        const coffees = yield* Ref.get(coffeeRef).pipe(
+          Effect.withSpan("coffee.service.deleteCoffee.findCoffee")
+        );
+
         const coffeeExists = coffees.some((c) => c.id === id);
 
         if (!coffeeExists) {
-          yield* Effect.fail(new CoffeeNotFound({ id }));
+          yield* Effect.fail(new CoffeeNotFound({ id })).pipe(
+            Effect.withSpan("coffee.service.deleteCoffee.coffeeNotFound", {
+              attributes: { "coffee.id": id },
+            })
+          );
         }
 
-        const filteredCoffees = coffees.filter((c) => c.id !== id);
-        yield* Ref.set(coffeeRef, filteredCoffees);
-      }),
+        yield* Effect.withSpan("coffee.service.deleteCoffee.delete", {
+          attributes: { "coffee.id": id },
+        })(
+          Effect.gen(function* () {
+            const filteredCoffees = coffees.filter((c) => c.id !== id);
+            yield* Ref.set(coffeeRef, filteredCoffees);
+          })
+        );
+      }).pipe(
+        Effect.withSpan("coffee.service.deleteCoffee", {
+          attributes: { "coffee.id": id },
+        })
+      ),
   });
 }).pipe(Layer.effect(CoffeeService));

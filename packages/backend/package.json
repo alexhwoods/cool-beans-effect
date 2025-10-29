@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@cool-beans/shared": "workspace:*",
+    "@effect/experimental": "^0.56.0",
     "@effect/platform": "^0.92.1",
     "@effect/platform-bun": "^0.81.1",
     "@effect/rpc": "^0.71.1",
