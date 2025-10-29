@@ -67,26 +67,22 @@ describe("Foo RPC E2E", () => {
     }).pipe(Effect.scoped, Effect.provide(ProtocolLive))
   );
 
-  // test(
-  //   "streamFoo should log items as they stream in",
-  //   async () => {
-  //     await Effect.gen(function* () {
-  //       const client = yield* RpcClient.make(AllRpcs);
+  test.effect("streamFoo should log items as they stream in", () =>
+    Effect.gen(function* () {
+      const client = yield* RpcClient.make(AllRpcs);
 
-  //       // Stream items and log each one as it arrives
-  //       yield* Stream.runForEach(
-  //         // don't buffer
-  //         // that's really just for demo purposes
-  //         client.streamFoo().pipe(Stream.rechunk(1)),
-  //         (foo) =>
-  //           Effect.gen(function* () {
-  //             yield* Effect.log(`Received foo: ${foo.name} (id: ${foo.id})`);
-  //           })
-  //       );
-  //     }).pipe(Effect.scoped, Effect.provide(ProtocolLive), Effect.runPromise);
-  //   },
-  //   { timeout: 20 * 1000 }
-  // );
+      // Stream items and log each one as it arrives
+      yield* Stream.runForEach(
+        // don't buffer
+        // that's really just for demo purposes
+        client.streamFoo().pipe(Stream.rechunk(1)),
+        (foo) =>
+          Effect.gen(function* () {
+            yield* Effect.log(`Received foo: ${foo.name} (id: ${foo.id})`);
+          })
+      );
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive))
+  );
 
   // test("getFooResponse should stream complete text", async () => {
   //   const result = await Effect.gen(function* () {
