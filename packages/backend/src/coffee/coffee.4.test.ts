@@ -1,14 +1,16 @@
-import { HttpRouter } from "@effect/platform";
+import { FetchHttpClient, HttpRouter } from "@effect/platform";
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun";
-import { RpcSerialization, RpcServer } from "@effect/rpc";
-import { Effect, Layer } from "effect";
+import { RpcClient, RpcSerialization, RpcServer } from "@effect/rpc";
+import { Effect, Either, Layer, Option } from "effect";
 import { RpcLayerLive } from "../rpc";
 import { corsMiddleware } from "../middleware/cors.middleware";
 import { beforeAll, describe, expect } from "bun:test";
 import { findOpenPortInRange } from "../test-utils/find-port-in-range";
 import { test } from "../test-utils/bun-test";
+import { AllRpcs } from "@cool-beans/shared";
 
 let port: number;
+let ProtocolLive: ReturnType<typeof RpcClient.layerProtocolHttp>;
 
 beforeAll(async () => {
   port = await findOpenPortInRange(8000, 12000);
@@ -23,98 +25,54 @@ beforeAll(async () => {
   );
 
   BunRuntime.runMain(Layer.launch(Main));
+
+  ProtocolLive = RpcClient.layerProtocolHttp({
+    url: `http://localhost:${port}/rpc`,
+  }).pipe(
+    Layer.provide([
+      // use fetch for http requests
+      FetchHttpClient.layer,
+      // use ndjson for serialization
+      RpcSerialization.layerNdjson,
+    ])
+  );
 });
 
 describe("listCoffees RPC (bun)", () => {
   test.effect("should return list of coffees", () =>
     Effect.gen(function* () {
-      const response = yield* Effect.tryPromise({
-        try: () =>
-          fetch(`http://localhost:${port}/rpc`, {
-            method: "POST",
-            headers: {
-              "content-type": "application/ndjson",
-            },
-            body: '{"_tag":"Request","id":"0","tag":"listCoffees","traceId":"75b9afc0a1e272365d5001dbb9d7df01","spanId":"942b66705515bf1e","sampled":true,"headers":[]}\n',
-          }),
-        catch: (error) => `Failed to fetch: ${error}`,
-      });
+      // Arrange
+      const client = yield* RpcClient.make(AllRpcs);
 
-      const result = yield* Effect.tryPromise({
-        try: () => response.json(),
-        catch: (error) => `Failed to parse JSON: ${error}`,
-      });
+      // Act
+      const result = yield* Effect.either(client.listCoffees());
 
-      expect(result).toStrictEqual({
-        _tag: "Exit",
-        requestId: "0",
-        exit: {
-          _tag: "Success",
-          value: [
-            {
-              id: 1,
-              name: "Ethiopian Yirgacheffe",
-              origin: "Ethiopia",
-              roast: "Light",
-              price: 24.99,
-              weight: "12oz",
-              description: "Bright and floral with notes of jasmine and citrus",
-              inStock: true,
-            },
-            {
-              id: 2,
-              name: "Colombian Supremo",
-              origin: "Colombia",
-              roast: "Medium",
-              price: 22.99,
-              weight: "12oz",
-              description:
-                "Rich and balanced with chocolate and nutty undertones",
-              inStock: true,
-            },
-            {
-              id: 3,
-              name: "Guatemala Antigua",
-              origin: "Guatemala",
-              roast: "Medium-Dark",
-              price: 26.99,
-              weight: "12oz",
-              description: "Full-bodied with smoky notes and a spicy finish",
-              inStock: false,
-            },
-            {
-              id: 4,
-              name: "Jamaican Blue Mountain",
-              origin: "Jamaica",
-              roast: "Medium",
-              price: 89.99,
-              weight: "8oz",
-              description: "Smooth and mild with a clean, bright finish",
-              inStock: true,
-            },
-            {
-              id: 5,
-              name: "Hawaiian Kona",
-              origin: "Hawaii",
-              roast: "Medium",
-              price: 45.99,
-              weight: "10oz",
-              description: "Rich and smooth with a hint of sweetness",
-              inStock: true,
-            },
-            {
-              id: 6,
-              name: "Sumatra Mandheling",
-              origin: "Indonesia",
-              roast: "Dark",
-              price: 28.99,
-              weight: "12oz",
-              description: "Earthy and full-bodied with low acidity",
-              inStock: true,
-            },
-          ],
-        },
+      // Assert
+      expect(Either.isRight(result)).toBe(true);
+
+      const coffees = Option.getOrThrow(Either.getRight(result));
+      expect(coffees.length).toBeGreaterThan(0);
+
+      // Verify all items have the expected structure
+      coffees.forEach((coffee) => {
+        expect(coffee).toHaveProperty("id");
+        expect(coffee).toHaveProperty("name");
+        expect(coffee).toHaveProperty("origin");
+        expect(coffee).toHaveProperty("roast");
+        expect(coffee).toHaveProperty("price");
+        expect(coffee).toHaveProperty("weight");
+        expect(coffee).toHaveProperty("description");
+        expect(coffee).toHaveProperty("inStock");
+
+        expect(typeof coffee.id).toBe("number");
+        expect(typeof coffee.name).toBe("string");
+        expect(typeof coffee.origin).toBe("string");
+        expect(typeof coffee.roast).toBe("string");
+        expect(typeof coffee.price).toBe("number");
+        expect(typeof coffee.weight).toBe("string");
+        expect(typeof coffee.description).toBe("string");
+        expect(typeof coffee.inStock).toBe("boolean");
       });
-    })
+    }).pipe(Effect.scoped, Effect.provide(ProtocolLive))
   );
 });
