@@ -1,22 +1,22 @@
 import { describe, expect, beforeAll } from "bun:test";
-import { FetchHttpClient } from "@effect/platform";
-import { RpcClient, RpcSerialization } from "@effect/rpc";
-import { Effect, Layer, Sink, Stream } from "effect";
-import { AllRpcs } from "@cool-beans/shared";
-import { setupRpcTestServer } from "../test-utils/setup-rpc-test-server";
+import { Effect, Sink, Stream } from "effect";
+import {
+  createRpcClientLayer,
+  RpcClientLive,
+} from "../test-utils/setup-rpc-test-server";
 import { test } from "../test-utils/bun-test";
 
-let ProtocolLive: ReturnType<typeof RpcClient.layerProtocolHttp>;
+let ClientLive: any;
 
 beforeAll(async () => {
-  ProtocolLive = await setupRpcTestServer();
+  ClientLive = await createRpcClientLayer();
 });
 
 describe("Foo RPC E2E", () => {
   test.effect("streamFoo should return all foo items", () =>
     Effect.gen(function* () {
       // Arrange
-      const client = yield* RpcClient.make(AllRpcs);
+      const client = yield* RpcClientLive;
 
       // Act
       const foos = yield* Stream.runCollect(client.streamFoo()).pipe(
@@ -45,13 +45,13 @@ describe("Foo RPC E2E", () => {
         name: "Foo Four",
         description: "The fourth foo",
       });
-    }).pipe(Effect.scoped, Effect.provide(ProtocolLive))
+    }).pipe(Effect.provide(ClientLive))
   );
 
   test.effect("streamFoo should stream items incrementally", () =>
     Effect.gen(function* () {
       // Arrange
-      const client = yield* RpcClient.make(AllRpcs);
+      const client = yield* RpcClientLive;
       const items: any[] = [];
 
       // Act
@@ -64,12 +64,12 @@ describe("Foo RPC E2E", () => {
       expect(
         items.every((item) => item.id && item.name && item.description)
       ).toBe(true);
-    }).pipe(Effect.scoped, Effect.provide(ProtocolLive))
+    }).pipe(Effect.provide(ClientLive))
   );
 
   test.effect("streamFoo should log items as they stream in", () =>
     Effect.gen(function* () {
-      const client = yield* RpcClient.make(AllRpcs);
+      const client = yield* RpcClientLive;
 
       // Stream items and log each one as it arrives
       yield* Stream.runForEach(
@@ -81,13 +81,13 @@ describe("Foo RPC E2E", () => {
             yield* Effect.log(`Received foo: ${foo.name} (id: ${foo.id})`);
           })
       );
-    }).pipe(Effect.scoped, Effect.provide(ProtocolLive))
+    }).pipe(Effect.provide(ClientLive))
   );
 
   test.effect("getFooResponse should stream complete text", () =>
     Effect.gen(function* () {
       // Arrange
-      const client = yield* RpcClient.make(AllRpcs);
+      const client = yield* RpcClientLive;
 
       // Act
       const text = yield* client
@@ -98,6 +98,6 @@ describe("Foo RPC E2E", () => {
       expect(text).toBe(
         "The quick brown fox jumps over the lazy dog. This is a sample paragraph that will be streamed slowly to demonstrate the streaming capabilities of the RPC framework. Each word appears with a small delay to simulate real-time text generation."
       );
-    }).pipe(Effect.scoped, Effect.provide(ProtocolLive))
+    }).pipe(Effect.provide(ClientLive))
   );
 });
