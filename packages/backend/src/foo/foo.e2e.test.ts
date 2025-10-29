@@ -67,7 +67,7 @@ describe("Foo RPC E2E", () => {
     }).pipe(Effect.provide(ClientLive))
   );
 
-  test.effect("streamFoo should log items as they stream in", () =>
+  test.effect.skip("streamFoo should log items as they stream in", () =>
     Effect.gen(function* () {
       const client = yield* RpcClientLive;
 

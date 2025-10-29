@@ -40,7 +40,7 @@ export const FooServiceLive = Layer.succeed(FooService, {
       Stream.tap(() =>
         Effect.gen(function* () {
           // Add delay between 50ms and 150ms per word
-          const delay = yield* Random.nextIntBetween(50, 150);
+          const delay = yield* Random.nextIntBetween(1, 10);
           yield* Effect.sleep(`${delay} millis`);
         })
       ),
