@@ -1,4 +1,5 @@
 - [ ] Why is coffee page a client component?
+- [ ] Is our use of Refs in conversation good?
 - [ ] Tanstack Start?
 - [ ] Effect Atom?
 - [ ] Clean up our streaming example

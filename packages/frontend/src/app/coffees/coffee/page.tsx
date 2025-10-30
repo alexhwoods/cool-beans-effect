@@ -11,35 +11,112 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Navigation, NavigationLink } from "@/components/ui/navigation";
+import { Effect, Layer } from "effect";
+import {
+  ConversationMessage,
+  CreateConversationResponse,
+  SendUserMessageRequest,
+  SendUserMessageResponse,
+} from "@cool-beans/shared";
+import { makeRpcClient, ProtocolLive } from "@/rpc-client";
 
 export default function CoffeeAssistantPage() {
-  const [messages, setMessages] = useState<Array<{
-    id: string;
-    role: "assistant" | "user";
-    content: string;
-  }>>([
-    {
-      id: "m1",
-      role: "assistant",
-      content:
-        "Hi! I’m your Coffee Assistant. Tell me about the coffee you want to create — name, origin, roast, price, weight, and a short description.",
-    },
-  ]);
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [input, setInput] = useState("");
+  const [conversationId, setConversationId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
+  // Create conversation on mount
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    createConversation();
+  }, []);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages.length]);
 
-  const handleSend = () => {
+  const createConversation = async () => {
+    setLoading(true);
+    setError(null);
+
+    const program = Effect.gen(function* () {
+      const client = yield* makeRpcClient();
+      return yield* client.createConversation();
+    }).pipe(
+      Effect.scoped,
+      Effect.provide(ProtocolLive),
+      Effect.catchAll((err) =>
+        Effect.sync(() => {
+          setError(String(err));
+          return null;
+        })
+      )
+    );
+
+    try {
+      const result = await Effect.runPromise(program);
+      if (result) {
+        setConversationId(result.id);
+        // Add initial AI message
+        setMessages([
+          new ConversationMessage({
+            sender: "ai",
+            message:
+              "Hi! I'm your Coffee Assistant. Tell me about the coffee you want to create — name, origin, roast, price, weight, and a short description.",
+          }),
+        ]);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to create conversation"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSend = async () => {
     const trimmed = input.trim();
-    if (!trimmed) return;
-    setMessages((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), role: "user", content: trimmed },
-    ]);
-    setInput("");
+    if (!trimmed || !conversationId || loading) return;
+
+    setLoading(true);
+    setError(null);
+
+    const request: SendUserMessageRequest = {
+      conversationId,
+      message: trimmed,
+    };
+
+    const program = Effect.gen(function* () {
+      const client = yield* makeRpcClient();
+      return yield* client.sendUserMessage(request);
+    }).pipe(
+      Effect.scoped,
+      Effect.provide(ProtocolLive),
+      Effect.catchAll((err) =>
+        Effect.sync(() => {
+          setError(String(err));
+          return null;
+        })
+      )
+    );
+
+    try {
+      const result = await Effect.runPromise(program);
+      if (result) {
+        setMessages([...result.messages]);
+        setInput("");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send message");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,9 +126,13 @@ export default function CoffeeAssistantPage() {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-primary-foreground font-bold text-lg">☕</span>
+              <span className="text-primary-foreground font-bold text-lg">
+                ☕
+              </span>
             </div>
-            <h1 className="text-4xl font-bold text-foreground tracking-tight">Cool Beans</h1>
+            <h1 className="text-4xl font-bold text-foreground tracking-tight">
+              Cool Beans
+            </h1>
           </div>
           <Navigation className="hidden md:flex">
             <NavigationLink
@@ -73,15 +154,35 @@ export default function CoffeeAssistantPage() {
               Pricing
             </NavigationLink>
           </Navigation>
-          <Button className="md:hidden" size="sm" variant="outline">☰</Button>
+          <Button className="md:hidden" size="sm" variant="outline">
+            ☰
+          </Button>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="py-8 px-6 max-w-7xl mx-auto">
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-300 rounded-lg text-red-800">
+            Error: {error}
+            <Button
+              onClick={() => setError(null)}
+              className="ml-4"
+              size="sm"
+              variant="outline"
+            >
+              Dismiss
+            </Button>
+          </div>
+        )}
+
         <div className="mb-8">
-          <h2 className="text-4xl font-bold text-foreground mb-2">Coffee Assistant</h2>
-          <p className="text-muted-foreground">Chat with AI to draft a new coffee</p>
+          <h2 className="text-4xl font-bold text-foreground mb-2">
+            Coffee Assistant
+          </h2>
+          <p className="text-muted-foreground">
+            Chat with AI to draft a new coffee
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -90,39 +191,67 @@ export default function CoffeeAssistantPage() {
             <CardHeader className="border-b bg-card/50">
               <CardTitle>Create a new coffee</CardTitle>
               <CardDescription>
-                Describe what you have in mind. I’ll help you fill in details and avoid duplicates.
+                Describe what you have in mind. I’ll help you fill in details
+                and avoid duplicates.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <div ref={scrollRef} className="h-[520px] overflow-y-auto px-6 py-6 space-y-4 bg-background">
-                {messages.map((m) => (
-                  <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                ref={scrollRef}
+                className="h-[520px] overflow-y-auto px-6 py-6 space-y-4 bg-background"
+              >
+                {loading && !conversationId && (
+                  <div className="flex justify-center items-center h-full">
+                    <div className="text-muted-foreground">
+                      Creating conversation...
+                    </div>
+                  </div>
+                )}
+                {messages.map((m, index) => (
+                  <div
+                    key={index}
+                    className={`flex ${
+                      m.sender === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
                     <div
                       className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm text-sm leading-relaxed ${
-                        m.role === "user"
+                        m.sender === "user"
                           ? "bg-primary text-primary-foreground rounded-br-sm"
                           : "bg-card text-foreground border rounded-bl-sm"
                       }`}
                     >
-                      {m.content}
+                      {m.message}
                     </div>
                   </div>
                 ))}
+                {loading && conversationId && (
+                  <div className="flex justify-start">
+                    <div className="bg-card text-foreground border rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm text-sm">
+                      AI is thinking...
+                    </div>
+                  </div>
+                )}
 
                 {/* Suggestion chips */}
                 <div className="pt-2 flex flex-wrap gap-2">
-                  {["Suggest coffee names", "Pick an origin", "Choose a roast", "Set a price"].map(
-                    (s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        className="text-xs px-3 py-1 rounded-full border hover:bg-primary/10 transition-colors text-foreground"
-                        onClick={() => setInput((prev) => (prev ? prev + " " + s : s))}
-                      >
-                        {s}
-                      </button>
-                    )
-                  )}
+                  {[
+                    "Suggest coffee names",
+                    "Pick an origin",
+                    "Choose a roast",
+                    "Set a price",
+                  ].map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      className="text-xs px-3 py-1 rounded-full border hover:bg-primary/10 transition-colors text-foreground"
+                      onClick={() =>
+                        setInput((prev) => (prev ? prev + " " + s : s))
+                      }
+                    >
+                      {s}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -133,6 +262,7 @@ export default function CoffeeAssistantPage() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Describe your coffee idea..."
+                    disabled={loading || !conversationId}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
@@ -140,8 +270,12 @@ export default function CoffeeAssistantPage() {
                       }
                     }}
                   />
-                  <Button onClick={handleSend} className="bg-primary hover:bg-primary/90">
-                    Send
+                  <Button
+                    onClick={handleSend}
+                    disabled={loading || !conversationId || !input.trim()}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    {loading ? "Sending..." : "Send"}
                   </Button>
                 </div>
               </div>
@@ -152,15 +286,23 @@ export default function CoffeeAssistantPage() {
           <Card>
             <CardHeader>
               <CardTitle>Tips for great coffees</CardTitle>
-              <CardDescription>What the assistant can help with</CardDescription>
+              <CardDescription>
+                What the assistant can help with
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <div className="p-3 rounded-lg bg-card border">
                 Name brainstorming with brand tone
               </div>
-              <div className="p-3 rounded-lg bg-card border">Suggesting origin and roast pairings</div>
-              <div className="p-3 rounded-lg bg-card border">Price guidance based on similar items</div>
-              <div className="p-3 rounded-lg bg-card border">Duplicate name detection and alternatives</div>
+              <div className="p-3 rounded-lg bg-card border">
+                Suggesting origin and roast pairings
+              </div>
+              <div className="p-3 rounded-lg bg-card border">
+                Price guidance based on similar items
+              </div>
+              <div className="p-3 rounded-lg bg-card border">
+                Duplicate name detection and alternatives
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -174,14 +316,16 @@ export default function CoffeeAssistantPage() {
               <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                 <span className="text-primary-foreground font-bold">☕</span>
               </div>
-              <span className="text-2xl font-bold text-foreground">Cool Beans</span>
+              <span className="text-2xl font-bold text-foreground">
+                Cool Beans
+              </span>
             </div>
-            <div className="text-muted-foreground text-sm">© 2025 Cool Beans. All rights reserved.</div>
+            <div className="text-muted-foreground text-sm">
+              © 2025 Cool Beans. All rights reserved.
+            </div>
           </div>
         </div>
       </footer>
     </div>
   );
 }
-
-
