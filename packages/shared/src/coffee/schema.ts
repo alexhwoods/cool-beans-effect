@@ -57,3 +57,15 @@ export class DeleteCoffeeRequest extends Schema.Class<DeleteCoffeeRequest>(
 )({
   id: Schema.Number,
 }) {}
+
+export class CoffeeSuggestion extends Schema.Class<CoffeeSuggestion>(
+  "CoffeeSuggestion"
+)({
+  name: Schema.String,
+  origin: Schema.String,
+  roast: Schema.String,
+  price: Schema.Number,
+  weight: Schema.String,
+  description: Schema.String,
+  inStock: Schema.Boolean,
+}) {}

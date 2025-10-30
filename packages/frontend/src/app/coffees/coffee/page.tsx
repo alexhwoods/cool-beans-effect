@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Navigation, NavigationLink } from "@/components/ui/navigation";
 import { Effect, Layer, Stream } from "effect";
 import {
-  ConversationMessage,
+  ConversationMessageChunk,
   CreateConversationResponse,
   SendUserMessageRequest,
   SendUserMessageResponse,
@@ -21,7 +21,7 @@ import {
 import { makeRpcClient, ProtocolLive } from "@/rpc-client";
 
 export default function CoffeeAssistantPage() {
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [messages, setMessages] = useState<ConversationMessageChunk[]>([]);
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -66,7 +66,7 @@ export default function CoffeeAssistantPage() {
         setConversationId(result.id);
         // Add initial AI message
         setMessages([
-          new ConversationMessage({
+          new ConversationMessageChunk({
             sender: "ai",
             message:
               "Hi! I'm your Coffee Assistant. Tell me about the coffee you want to create — name, origin, roast, price, weight, and a short description.",
@@ -107,7 +107,7 @@ export default function CoffeeAssistantPage() {
               return [
                 ...prev,
                 m,
-                new ConversationMessage({ sender: "ai", message: "" }),
+                new ConversationMessageChunk({ sender: "ai", message: "" }),
               ];
             }
 
@@ -116,7 +116,10 @@ export default function CoffeeAssistantPage() {
               aiStreamIndexRef.current = prev.length;
               return [
                 ...prev,
-                new ConversationMessage({ sender: "ai", message: m.message }),
+                new ConversationMessageChunk({
+                  sender: "ai",
+                  message: m.message,
+                }),
               ];
             }
 
@@ -125,14 +128,14 @@ export default function CoffeeAssistantPage() {
             if (idx >= updated.length) {
               // ensure placeholder exists if state lagged behind
               updated.push(
-                new ConversationMessage({ sender: "ai", message: "" })
+                new ConversationMessageChunk({ sender: "ai", message: "" })
               );
             }
             const existing = updated[idx];
             const nextText = existing.message
               ? `${existing.message} ${m.message}`
               : m.message;
-            updated[idx] = new ConversationMessage({
+            updated[idx] = new ConversationMessageChunk({
               sender: "ai",
               message: nextText,
             });

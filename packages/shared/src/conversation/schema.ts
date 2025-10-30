@@ -8,8 +8,8 @@ export class CreateConversationResponse extends Schema.Class<CreateConversationR
 
 export const Sender = Schema.Literal("user", "ai");
 
-export class ConversationMessage extends Schema.Class<ConversationMessage>(
-  "ConversationMessage"
+export class ConversationMessageChunk extends Schema.Class<ConversationMessageChunk>(
+  "ConversationMessageChunk"
 )({
   sender: Sender,
   message: Schema.String,
@@ -25,7 +25,7 @@ export class SendUserMessageRequest extends Schema.Class<SendUserMessageRequest>
 export class SendUserMessageResponse extends Schema.Class<SendUserMessageResponse>(
   "SendUserMessageResponse"
 )({
-  messages: Schema.Array(ConversationMessage),
+  chunks: Schema.Array(ConversationMessageChunk),
 }) {}
 
 export class ConversationNotFound extends Schema.TaggedError<ConversationNotFound>()(
@@ -34,5 +34,3 @@ export class ConversationNotFound extends Schema.TaggedError<ConversationNotFoun
     id: Schema.Number,
   }
 ) {}
-
-

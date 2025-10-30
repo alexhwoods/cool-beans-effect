@@ -50,7 +50,7 @@ describe("Conversation RPC E2E", () => {
   });
 
   describe("sendUserMessage (stream)", () => {
-    test.effect("should stream user then ai messages", () =>
+    test.effect.only("should stream user then ai messages", () =>
       Effect.gen(function* () {
         const client = yield* RpcClientLive;
 
@@ -65,6 +65,8 @@ describe("Conversation RPC E2E", () => {
           .sendUserMessage({ conversationId: id, message: messageText })
           .pipe(Stream.run(Sink.collectAll()));
         const messages = Chunk.toReadonlyArray(collected);
+
+        console.log(messages);
 
         expect(messages.length).toBe(2);
         expect(messages[0]).toEqual({ sender: "user", message: messageText });

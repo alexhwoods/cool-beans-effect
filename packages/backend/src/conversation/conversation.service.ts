@@ -1,6 +1,6 @@
 import { Context, Effect, Layer, Ref, Stream, Random } from "effect";
 import {
-  ConversationMessage,
+  ConversationMessageChunk,
   ConversationNotFound,
   CreateConversationResponse,
   SendUserMessageRequest,
@@ -13,14 +13,14 @@ export class ConversationService extends Context.Tag("ConversationService")<
     readonly createConversation: () => Effect.Effect<CreateConversationResponse>;
     readonly sendUserMessage: (
       request: SendUserMessageRequest
-    ) => Stream.Stream<ConversationMessage, ConversationNotFound>;
+    ) => Stream.Stream<ConversationMessageChunk, ConversationNotFound>;
   }
 >() {}
 
 export const ConversationServiceLive = Effect.gen(function* () {
   const nextIdRef = yield* Ref.make(1);
   const historiesRef = yield* Ref.make(
-    new Map<number, ConversationMessage[]>()
+    new Map<number, ConversationMessageChunk[]>()
   );
 
   return ConversationService.of({
@@ -46,12 +46,12 @@ export const ConversationServiceLive = Effect.gen(function* () {
             );
           }
 
-          const userMsg = new ConversationMessage({
+          const userMsg = new ConversationMessageChunk({
             sender: "user",
             message: request.message,
           });
 
-          const aiMsg = new ConversationMessage({
+          const aiMsg = new ConversationMessageChunk({
             sender: "ai",
             message: `Got it. You said: "${request.message}"`,
           });
@@ -71,7 +71,8 @@ export const ConversationServiceLive = Effect.gen(function* () {
               })
             ),
             Stream.map(
-              (word) => new ConversationMessage({ sender: "ai", message: word })
+              (word) =>
+                new ConversationMessageChunk({ sender: "ai", message: word })
             )
           );
 
