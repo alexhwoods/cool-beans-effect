@@ -40,7 +40,7 @@ function AssistantLiveBubble({ text }: { text: string }) {
 
 export default function CoffeeAssistantPage() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [aiResponse, setAiResponse] = useState<string>("");
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -109,7 +109,7 @@ export default function CoffeeAssistantPage() {
     setError(null);
     // New message cycle: reset AI streaming index and clear live bubble; append user message now
     aiStreamIndexRef.current = null;
-    setAiResponse("");
+    setAiResponse(null);
     setMessages((prev) => [...prev, { sender: "user", message: trimmed }]);
 
     const request: SendUserMessageRequest = {
@@ -139,14 +139,24 @@ export default function CoffeeAssistantPage() {
 
     try {
       await Effect.runPromise(program);
-      // Commit the live bubble into the durable history
-      if (aiResponse) {
-        setMessages((prev) => [...prev, { sender: "ai", message: aiResponse }]);
-        setAiResponse("");
-      }
+      // Commit the live bubble into the durable history and clear it (dedupe-safe)
+      setAiResponse((current) => {
+        const text = (current ?? "").trim();
+        if (text) {
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last && last.sender === "ai" && last.message === text) {
+              return prev;
+            }
+            return [...prev, { sender: "ai", message: text }];
+          });
+        }
+        return null;
+      });
       setInput("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message");
+      setAiResponse(null);
     } finally {
       setLoading(false);
     }
