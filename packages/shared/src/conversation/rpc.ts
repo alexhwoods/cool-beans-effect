@@ -3,7 +3,7 @@ import { Schema } from "effect";
 import {
   CreateConversationResponse,
   SendUserMessageRequest,
-  SendUserMessageResponse,
+  ConversationMessage,
   ConversationNotFound,
 } from "./schema";
 
@@ -14,8 +14,9 @@ export const createConversation = Rpc.make("createConversation", {
 
 export const sendUserMessage = Rpc.make("sendUserMessage", {
   payload: SendUserMessageRequest,
-  success: SendUserMessageResponse,
+  success: ConversationMessage,
   error: ConversationNotFound,
+  stream: true,
 });
 
 

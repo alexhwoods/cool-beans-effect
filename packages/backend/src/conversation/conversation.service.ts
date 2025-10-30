@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Ref } from "effect";
+import { Context, Effect, Layer, Ref, Stream, Random } from "effect";
 import {
   ConversationMessage,
   ConversationNotFound,
@@ -13,7 +13,7 @@ export class ConversationService extends Context.Tag("ConversationService")<
     readonly createConversation: () => Effect.Effect<CreateConversationResponse>;
     readonly sendUserMessage: (
       request: SendUserMessageRequest
-    ) => Effect.Effect<SendUserMessageResponse, ConversationNotFound>;
+    ) => Stream.Stream<ConversationMessage, ConversationNotFound>;
   }
 >() {}
 
@@ -36,35 +36,48 @@ export const ConversationServiceLive = Effect.gen(function* () {
       }).pipe(Effect.withSpan("conversation.service.createConversation")),
 
     sendUserMessage: (request: SendUserMessageRequest) =>
-      Effect.gen(function* () {
-        const histories = yield* Ref.get(historiesRef);
-        const existing = histories.get(request.conversationId);
-        if (!existing) {
-          yield* Effect.fail(
-            new ConversationNotFound({ id: request.conversationId })
+      Stream.unwrap(
+        Effect.gen(function* () {
+          const histories = yield* Ref.get(historiesRef);
+          const existing = histories.get(request.conversationId);
+          if (!existing) {
+            return yield* Effect.fail(
+              new ConversationNotFound({ id: request.conversationId })
+            );
+          }
+
+          const userMsg = new ConversationMessage({
+            sender: "user",
+            message: request.message,
+          });
+
+          const aiMsg = new ConversationMessage({
+            sender: "ai",
+            message: `Got it. You said: "${request.message}"`,
+          });
+
+          // Persist to history eagerly
+          const updated = [...existing, userMsg, aiMsg];
+          histories.set(request.conversationId, updated);
+          yield* Ref.set(historiesRef, histories);
+
+          // Build stream
+          return Stream.fromIterable([userMsg]).pipe(
+            Stream.concat(
+              Stream.fromEffect(
+                Effect.gen(function* () {
+                  const delay = yield* Random.nextIntBetween(1, 8);
+                  yield* Effect.sleep(`${delay * 500} millis`);
+                  return aiMsg;
+                })
+              )
+            )
           );
-        }
-
-        const updated = existing ? [...existing] : [];
-        updated.push(
-          new ConversationMessage({ sender: "user", message: request.message })
-        );
-
-        // Simple placeholder AI reply
-        const aiReply = new ConversationMessage({
-          sender: "ai",
-          message: `Got it. You said: "${request.message}"`,
-        });
-        updated.push(aiReply);
-
-        histories.set(request.conversationId, updated);
-        yield* Ref.set(historiesRef, histories);
-
-        return new SendUserMessageResponse({ messages: updated });
-      }).pipe(
-        Effect.withSpan("conversation.service.sendUserMessage", {
-          attributes: { "conversation.id": (request as any).conversationId },
-        })
+        }).pipe(
+          Effect.withSpan("conversation.service.sendUserMessage", {
+            attributes: { "conversation.id": (request as any).conversationId },
+          })
+        )
       ),
   });
 }).pipe(Layer.effect(ConversationService));

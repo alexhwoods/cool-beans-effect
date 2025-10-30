@@ -10,10 +10,6 @@ export const makeConversationRpcHandlers = Effect.gen(function* () {
         .createConversation()
         .pipe(Effect.withSpan("conversation.rpc.createConversation")),
     sendUserMessage: (request: any) =>
-      conversationService.sendUserMessage(request).pipe(
-        Effect.withSpan("conversation.rpc.sendUserMessage", {
-          attributes: { "conversation.id": request.conversationId },
-        })
-      ),
+      conversationService.sendUserMessage(request),
   } as const;
 });

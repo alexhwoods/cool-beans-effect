@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Navigation, NavigationLink } from "@/components/ui/navigation";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Stream } from "effect";
 import {
   ConversationMessage,
   CreateConversationResponse,
@@ -94,24 +94,25 @@ export default function CoffeeAssistantPage() {
 
     const program = Effect.gen(function* () {
       const client = yield* makeRpcClient();
-      return yield* client.sendUserMessage(request);
+      // Stream messages and append as they arrive
+      yield* Stream.runForEach(client.sendUserMessage(request), (m) =>
+        Effect.sync(() => {
+          setMessages((prev) => [...prev, m]);
+        })
+      );
     }).pipe(
       Effect.scoped,
       Effect.provide(ProtocolLive),
       Effect.catchAll((err) =>
         Effect.sync(() => {
           setError(String(err));
-          return null;
         })
       )
     );
 
     try {
-      const result = await Effect.runPromise(program);
-      if (result) {
-        setMessages([...result.messages]);
-        setInput("");
-      }
+      await Effect.runPromise(program);
+      setInput("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message");
     } finally {
