@@ -111,10 +111,13 @@ export default function CoffeeAssistantPage() {
               ];
             }
 
-            // AI chunk: update existing bubble; if missing, create safely
+            // AI chunk: update existing bubble by accumulating tokens; if missing, create safely
             if (aiStreamIndexRef.current == null) {
               aiStreamIndexRef.current = prev.length;
-              return [...prev, m];
+              return [
+                ...prev,
+                new ConversationMessage({ sender: "ai", message: m.message }),
+              ];
             }
 
             const idx = aiStreamIndexRef.current;
@@ -125,7 +128,14 @@ export default function CoffeeAssistantPage() {
                 new ConversationMessage({ sender: "ai", message: "" })
               );
             }
-            updated[idx] = m;
+            const existing = updated[idx];
+            const nextText = existing.message
+              ? `${existing.message} ${m.message}`
+              : m.message;
+            updated[idx] = new ConversationMessage({
+              sender: "ai",
+              message: nextText,
+            });
             return updated;
           });
         })

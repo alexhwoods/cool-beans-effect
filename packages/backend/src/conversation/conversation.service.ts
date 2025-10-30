@@ -70,10 +70,9 @@ export const ConversationServiceLive = Effect.gen(function* () {
                 yield* Effect.sleep(`${delay * 50} millis`);
               })
             ),
-            Stream.mapAccum("", (acc, word) => {
-              const next = acc ? `${acc} ${word}` : word;
-              return [next, new ConversationMessage({ sender: "ai", message: next })];
-            })
+            Stream.map(
+              (word) => new ConversationMessage({ sender: "ai", message: word })
+            )
           );
 
           return Stream.fromIterable([userMsg]).pipe(Stream.concat(aiStream));
