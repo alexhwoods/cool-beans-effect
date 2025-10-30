@@ -27,6 +27,8 @@ export default function CoffeeAssistantPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // Track the index of the AI message currently being streamed so we can update the same bubble
+  const aiStreamIndexRef = useRef<number | null>(null);
 
   // Create conversation on mount
   useEffect(() => {
@@ -94,10 +96,38 @@ export default function CoffeeAssistantPage() {
 
     const program = Effect.gen(function* () {
       const client = yield* makeRpcClient();
-      // Stream messages and append as they arrive
+      // Stream messages and update UI progressively
       yield* Stream.runForEach(client.sendUserMessage(request), (m) =>
         Effect.sync(() => {
-          setMessages((prev) => [...prev, m]);
+          setMessages((prev) => {
+            if (m.sender === "user") {
+              // Append user message and immediately create a placeholder AI bubble to update
+              const placeholderIndex = prev.length + 1;
+              aiStreamIndexRef.current = placeholderIndex;
+              return [
+                ...prev,
+                m,
+                new ConversationMessage({ sender: "ai", message: "" }),
+              ];
+            }
+
+            // AI chunk: update existing bubble; if missing, create safely
+            if (aiStreamIndexRef.current == null) {
+              aiStreamIndexRef.current = prev.length;
+              return [...prev, m];
+            }
+
+            const idx = aiStreamIndexRef.current;
+            const updated = [...prev];
+            if (idx >= updated.length) {
+              // ensure placeholder exists if state lagged behind
+              updated.push(
+                new ConversationMessage({ sender: "ai", message: "" })
+              );
+            }
+            updated[idx] = m;
+            return updated;
+          });
         })
       );
     }).pipe(

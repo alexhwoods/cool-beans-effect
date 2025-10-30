@@ -61,18 +61,22 @@ export const ConversationServiceLive = Effect.gen(function* () {
           histories.set(request.conversationId, updated);
           yield* Ref.set(historiesRef, histories);
 
-          // Build stream
-          return Stream.fromIterable([userMsg]).pipe(
-            Stream.concat(
-              Stream.fromEffect(
-                Effect.gen(function* () {
-                  const delay = yield* Random.nextIntBetween(1, 8);
-                  yield* Effect.sleep(`${delay * 1000} millis`);
-                  return aiMsg;
-                })
-              )
-            )
+          // Build streaming AI reply word-by-word (accumulated)
+          const words = aiMsg.message.split(" ");
+          const aiStream = Stream.fromIterable(words).pipe(
+            Stream.tap(() =>
+              Effect.gen(function* () {
+                const delay = yield* Random.nextIntBetween(1, 10);
+                yield* Effect.sleep(`${delay * 50} millis`);
+              })
+            ),
+            Stream.mapAccum("", (acc, word) => {
+              const next = acc ? `${acc} ${word}` : word;
+              return [next, new ConversationMessage({ sender: "ai", message: next })];
+            })
           );
+
+          return Stream.fromIterable([userMsg]).pipe(Stream.concat(aiStream));
         }).pipe(
           Effect.withSpan("conversation.service.sendUserMessage", {
             attributes: { "conversation.id": (request as any).conversationId },
