@@ -6,16 +6,20 @@ import { makeFooRpcHandlers } from "./foo/foo.rpc";
 import { FooServiceLive } from "./foo/foo.service";
 import { makeCoffeeRpcHandlers } from "./coffee/coffee.rpc";
 import { CoffeeServiceLive } from "./coffee/coffee.service";
+import { makeConversationRpcHandlers } from "../src/conversation/conversation.rpc";
+import { ConversationServiceLive } from "../src/conversation/conversation.service";
 
 // Combine all RPC handlers into a single implementation layer
 const AllRpcHandlersLive = AllRpcs.toLayer(
   Effect.gen(function* () {
     const fooHandlers = yield* makeFooRpcHandlers;
     const coffeeHandlers = yield* makeCoffeeRpcHandlers;
+    const conversationHandlers = yield* makeConversationRpcHandlers;
 
     return {
       ...fooHandlers,
       ...coffeeHandlers,
+      ...conversationHandlers,
     };
   })
 );
@@ -24,5 +28,6 @@ const AllRpcHandlersLive = AllRpcs.toLayer(
 export const RpcLayerLive = RpcServer.layer(AllRpcs).pipe(
   Layer.provide(AllRpcHandlersLive),
   Layer.provide(FooServiceLive),
-  Layer.provide(CoffeeServiceLive)
+  Layer.provide(CoffeeServiceLive),
+  Layer.provide(ConversationServiceLive)
 );

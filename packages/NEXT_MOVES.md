@@ -1,3 +1,4 @@
+- [ ] Why is coffee page a client component?
 - [ ] Tanstack Start?
 - [ ] Effect Atom?
 - [ ] Clean up our streaming example
