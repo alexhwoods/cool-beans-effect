@@ -52,6 +52,7 @@ describe("Conversation RPC E2E", () => {
   describe("sendUserMessage (stream)", () => {
     test.effect.only("should stream user then ai messages", () =>
       Effect.gen(function* () {
+        // Arrange
         const client = yield* RpcClientLive;
 
         const { id } = Option.getOrThrow(
@@ -61,17 +62,29 @@ describe("Conversation RPC E2E", () => {
         );
 
         const messageText = "Create a medium roast Ethiopia coffee";
-        const collected = yield* client
+
+        // Act
+        // @todo: our space handling is messy
+        const response = yield* client
           .sendUserMessage({ conversationId: id, message: messageText })
-          .pipe(Stream.run(Sink.collectAll()));
-        const messages = Chunk.toReadonlyArray(collected);
+          .pipe(
+            Stream.run(
+              Sink.foldLeft("", (acc, b) => {
+                // if b is a string
+                if (typeof b.response === "string") {
+                  acc += " " + b.response;
+                } else {
+                  // do nothing
+                }
+                return acc;
+              })
+            )
+          );
 
-        console.log(messages);
-
-        expect(messages.length).toBe(2);
-        expect(messages[0]).toEqual({ sender: "user", message: messageText });
-        expect(messages[1].sender).toBe("ai");
-        expect(messages[1].message).toContain(messageText);
+        // Assert
+        expect(response.trim()).toBe(
+          'Got it. You said: "Create a medium roast Ethiopia coffee"'
+        );
       }).pipe(Effect.provide(ClientLive))
     );
 

@@ -1,6 +1,6 @@
 import { Context, Effect, Layer, Ref, Stream, Random } from "effect";
 import {
-  ConversationMessageChunk,
+  AiResponseChunk,
   ConversationNotFound,
   CreateConversationResponse,
   SendUserMessageRequest,
@@ -13,15 +13,13 @@ export class ConversationService extends Context.Tag("ConversationService")<
     readonly createConversation: () => Effect.Effect<CreateConversationResponse>;
     readonly sendUserMessage: (
       request: SendUserMessageRequest
-    ) => Stream.Stream<ConversationMessageChunk, ConversationNotFound>;
+    ) => Stream.Stream<AiResponseChunk, ConversationNotFound>;
   }
 >() {}
 
 export const ConversationServiceLive = Effect.gen(function* () {
   const nextIdRef = yield* Ref.make(1);
-  const historiesRef = yield* Ref.make(
-    new Map<number, ConversationMessageChunk[]>()
-  );
+  const historiesRef = yield* Ref.make(new Map<number, AiResponseChunk[]>());
 
   return ConversationService.of({
     createConversation: () =>
@@ -46,37 +44,25 @@ export const ConversationServiceLive = Effect.gen(function* () {
             );
           }
 
-          const userMsg = new ConversationMessageChunk({
-            sender: "user",
-            message: request.message,
-          });
-
-          const aiMsg = new ConversationMessageChunk({
-            sender: "ai",
-            message: `Got it. You said: "${request.message}"`,
-          });
+          const response = `Got it. You said: "${request.message}"`;
 
           // Persist to history eagerly
-          const updated = [...existing, userMsg, aiMsg];
-          histories.set(request.conversationId, updated);
-          yield* Ref.set(historiesRef, histories);
+          // @todo: deal with history
+          // const updated = [...existing, userMsg, aiMsg];
+          // histories.set(request.conversationId, updated);
+          // yield* Ref.set(historiesRef, histories);
 
           // Build streaming AI reply word-by-word (accumulated)
-          const words = aiMsg.message.split(" ");
-          const aiStream = Stream.fromIterable(words).pipe(
+          const words = response.split(" ");
+          return Stream.fromIterable(words).pipe(
             Stream.tap(() =>
               Effect.gen(function* () {
                 const delay = yield* Random.nextIntBetween(1, 10);
                 yield* Effect.sleep(`${delay * 50} millis`);
               })
             ),
-            Stream.map(
-              (word) =>
-                new ConversationMessageChunk({ sender: "ai", message: word })
-            )
+            Stream.map((word) => new AiResponseChunk({ response: word }))
           );
-
-          return Stream.fromIterable([userMsg]).pipe(Stream.concat(aiStream));
         }).pipe(
           Effect.withSpan("conversation.service.sendUserMessage", {
             attributes: { "conversation.id": (request as any).conversationId },

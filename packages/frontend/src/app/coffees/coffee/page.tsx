@@ -13,15 +13,34 @@ import { Input } from "@/components/ui/input";
 import { Navigation, NavigationLink } from "@/components/ui/navigation";
 import { Effect, Layer, Stream } from "effect";
 import {
-  ConversationMessageChunk,
   CreateConversationResponse,
   SendUserMessageRequest,
-  SendUserMessageResponse,
 } from "@cool-beans/shared";
 import { makeRpcClient, ProtocolLive } from "@/rpc-client";
 
+type Message = {
+  sender: "user" | "ai";
+  message: string;
+};
+
+const toMessage = (c: any): Message => ({
+  sender: c.sender,
+  message: c.message,
+});
+
+function AssistantLiveBubble({ text }: { text: string }) {
+  return (
+    <div className="flex justify-start">
+      <div className="max-w-[80%] rounded-2xl px-4 py-3 shadow-sm text-sm leading-relaxed bg-card text-foreground border rounded-bl-sm">
+        {text}
+      </div>
+    </div>
+  );
+}
+
 export default function CoffeeAssistantPage() {
-  const [messages, setMessages] = useState<ConversationMessageChunk[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [aiResponse, setAiResponse] = useState<string>("");
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -66,11 +85,11 @@ export default function CoffeeAssistantPage() {
         setConversationId(result.id);
         // Add initial AI message
         setMessages([
-          new ConversationMessageChunk({
+          {
             sender: "ai",
             message:
               "Hi! I'm your Coffee Assistant. Tell me about the coffee you want to create — name, origin, roast, price, weight, and a short description.",
-          }),
+          },
         ]);
       }
     } catch (err) {
@@ -88,6 +107,10 @@ export default function CoffeeAssistantPage() {
 
     setLoading(true);
     setError(null);
+    // New message cycle: reset AI streaming index and clear live bubble; append user message now
+    aiStreamIndexRef.current = null;
+    setAiResponse("");
+    setMessages((prev) => [...prev, { sender: "user", message: trimmed }]);
 
     const request: SendUserMessageRequest = {
       conversationId,
@@ -96,51 +119,12 @@ export default function CoffeeAssistantPage() {
 
     const program = Effect.gen(function* () {
       const client = yield* makeRpcClient();
-      // Stream messages and update UI progressively
+      // Stream messages and update the live assistant bubble progressively
       yield* Stream.runForEach(client.sendUserMessage(request), (m) =>
         Effect.sync(() => {
-          setMessages((prev) => {
-            if (m.sender === "user") {
-              // Append user message and immediately create a placeholder AI bubble to update
-              const placeholderIndex = prev.length + 1;
-              aiStreamIndexRef.current = placeholderIndex;
-              return [
-                ...prev,
-                m,
-                new ConversationMessageChunk({ sender: "ai", message: "" }),
-              ];
-            }
-
-            // AI chunk: update existing bubble by accumulating tokens; if missing, create safely
-            if (aiStreamIndexRef.current == null) {
-              aiStreamIndexRef.current = prev.length;
-              return [
-                ...prev,
-                new ConversationMessageChunk({
-                  sender: "ai",
-                  message: m.message,
-                }),
-              ];
-            }
-
-            const idx = aiStreamIndexRef.current;
-            const updated = [...prev];
-            if (idx >= updated.length) {
-              // ensure placeholder exists if state lagged behind
-              updated.push(
-                new ConversationMessageChunk({ sender: "ai", message: "" })
-              );
-            }
-            const existing = updated[idx];
-            const nextText = existing.message
-              ? `${existing.message} ${m.message}`
-              : m.message;
-            updated[idx] = new ConversationMessageChunk({
-              sender: "ai",
-              message: nextText,
-            });
-            return updated;
-          });
+          setAiResponse((prev) =>
+            prev ? `${prev} ${String(m.response)}` : String(m.response)
+          );
         })
       );
     }).pipe(
@@ -155,6 +139,11 @@ export default function CoffeeAssistantPage() {
 
     try {
       await Effect.runPromise(program);
+      // Commit the live bubble into the durable history
+      if (aiResponse) {
+        setMessages((prev) => [...prev, { sender: "ai", message: aiResponse }]);
+        setAiResponse("");
+      }
       setInput("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message");
@@ -269,13 +258,7 @@ export default function CoffeeAssistantPage() {
                     </div>
                   </div>
                 ))}
-                {loading && conversationId && (
-                  <div className="flex justify-start">
-                    <div className="bg-card text-foreground border rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm text-sm">
-                      AI is thinking...
-                    </div>
-                  </div>
-                )}
+                {aiResponse && <AssistantLiveBubble text={aiResponse} />}
 
                 {/* Suggestion chips */}
                 <div className="pt-2 flex flex-wrap gap-2">
