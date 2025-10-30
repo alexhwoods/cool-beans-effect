@@ -67,7 +67,7 @@ export const ConversationServiceLive = Effect.gen(function* () {
               Stream.fromEffect(
                 Effect.gen(function* () {
                   const delay = yield* Random.nextIntBetween(1, 8);
-                  yield* Effect.sleep(`${delay * 500} millis`);
+                  yield* Effect.sleep(`${delay * 1000} millis`);
                   return aiMsg;
                 })
               )
