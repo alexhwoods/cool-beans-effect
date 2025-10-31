@@ -22,10 +22,28 @@ type Message = {
   message: string;
 };
 
-function AssistantLiveBubble({ text }: { text: string }) {
+interface MessageBubbleProps {
+  sender: "user" | "ai";
+  text: string;
+  isStreaming?: boolean;
+}
+
+function MessageBubble({
+  sender,
+  text,
+  isStreaming = false,
+}: MessageBubbleProps) {
+  const isUser = sender === "user";
+
   return (
-    <div className="flex justify-start">
-      <div className="max-w-[85%] rounded-2xl px-3 py-2 shadow-sm text-xs leading-relaxed bg-card text-foreground border rounded-bl-sm">
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+      <div
+        className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-sm text-xs leading-relaxed ${
+          isUser
+            ? "bg-primary text-primary-foreground rounded-br-sm"
+            : "bg-card text-foreground border rounded-bl-sm"
+        } ${isStreaming ? "opacity-90" : ""}`}
+      >
         {text}
       </div>
     </div>
@@ -242,24 +260,15 @@ export function InventoryChatbot({
                     </div>
                   )}
                   {messages.map((m, index) => (
-                    <div
+                    <MessageBubble
                       key={index}
-                      className={`flex ${
-                        m.sender === "user" ? "justify-end" : "justify-start"
-                      }`}
-                    >
-                      <div
-                        className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-sm text-xs leading-relaxed ${
-                          m.sender === "user"
-                            ? "bg-primary text-primary-foreground rounded-br-sm"
-                            : "bg-card text-foreground border rounded-bl-sm"
-                        }`}
-                      >
-                        {m.message}
-                      </div>
-                    </div>
+                      sender={m.sender}
+                      text={m.message}
+                    />
                   ))}
-                  {aiResponse && <AssistantLiveBubble text={aiResponse} />}
+                  {aiResponse && (
+                    <MessageBubble sender="ai" text={aiResponse} isStreaming />
+                  )}
 
                   {error && (
                     <div className="p-2 bg-red-100 border border-red-300 rounded-lg text-red-800 text-xs">
