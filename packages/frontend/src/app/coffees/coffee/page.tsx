@@ -241,7 +241,7 @@ export default function CoffeeAssistantPage() {
             <CardContent className="p-0">
               <div
                 ref={scrollRef}
-                className="h-[520px] overflow-y-auto px-6 py-6 space-y-4 bg-background"
+                className="h-[520px] overflow-y-auto px-6 py-6 space-y-4 bg-background chat-scroll"
               >
                 {loading && !conversationId && (
                   <div className="flex justify-center items-center h-full">
