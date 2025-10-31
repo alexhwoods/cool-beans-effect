@@ -168,153 +168,159 @@ export function InventoryChatbot({
     <>
       {/* Toggle Button - Always visible when collapsed */}
       {!isExpanded && (
-        <div className="fixed right-0 top-20 z-50">
-          <Button
+        <>
+          <div
             onClick={() => onToggle(true)}
-            className="rounded-l-lg rounded-r-none shadow-lg bg-primary hover:bg-primary/90 h-12 px-4"
-            size="lg"
+            className="fixed right-0 top-1/2 -translate-y-1/2 z-50 w-6 h-24 rounded-l-md bg-primary/80 hover:bg-primary shadow-md cursor-pointer flex items-center justify-center group"
             title="Open Inventory Assistant"
           >
-            💬 Chat
-          </Button>
-        </div>
+            <div className="w-1 h-12 bg-primary-foreground/30 group-hover:bg-primary-foreground/50 rounded-full flex flex-col gap-1">
+              <div className="w-full h-1 bg-primary-foreground/30 group-hover:bg-primary-foreground/50 rounded-full"></div>
+              <div className="w-full h-1 bg-primary-foreground/30 group-hover:bg-primary-foreground/50 rounded-full"></div>
+              <div className="w-full h-1 bg-primary-foreground/30 group-hover:bg-primary-foreground/50 rounded-full"></div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Sidebar Container - Fixed to viewport, aligned with header bottom */}
       <div
         className={`${
           isExpanded ? "w-96" : "w-0"
-        } fixed right-0 top-[88px] h-[calc(100vh-88px)] transition-all duration-300 ease-in-out overflow-hidden flex flex-col z-40 ${className || ""}`}
+        } fixed right-0 top-[88px] h-[calc(100vh-88px)] transition-all duration-300 ease-in-out overflow-hidden flex flex-col z-40 ${
+          className || ""
+        }`}
       >
-
-      {/* Sidebar Content */}
-      {isExpanded && (
-        <div className="bg-card border-l border-border shadow-2xl flex flex-col h-full w-96">
-        <Card className="rounded-none border-0 h-full flex flex-col pt-8">
-          <CardHeader className="border-b bg-card/50 flex-shrink-0 pt-0 pb-4 px-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">Inventory Assistant</CardTitle>
-                <CardDescription className="text-xs">
-                  Manage your coffee inventory
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => onToggle(false)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  title="Collapse sidebar"
-                >
-                  ←
-                </Button>
-                <Button
-                  onClick={() => onToggle(false)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  title="Close"
-                >
-                  ✕
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
-            {/* Messages Area */}
-            <div
-              ref={scrollRef}
-              className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-background chat-scroll"
-            >
-              {loading && !conversationId && (
-                <div className="flex justify-center items-center h-full">
-                  <div className="text-muted-foreground text-sm">
-                    Starting conversation...
+        {/* Sidebar Content */}
+        {isExpanded && (
+          <div className="bg-card border-l border-border shadow-2xl flex flex-col h-full w-96">
+            <Card className="rounded-none border-0 h-full flex flex-col pt-8">
+              <CardHeader className="border-b bg-card/50 flex-shrink-0 pt-0 pb-4 px-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">
+                      Inventory Assistant
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Manage your coffee inventory
+                    </CardDescription>
                   </div>
-                </div>
-              )}
-              {messages.map((m, index) => (
-                <div
-                  key={index}
-                  className={`flex ${
-                    m.sender === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-sm text-xs leading-relaxed ${
-                      m.sender === "user"
-                        ? "bg-primary text-primary-foreground rounded-br-sm"
-                        : "bg-card text-foreground border rounded-bl-sm"
-                    }`}
-                  >
-                    {m.message}
-                  </div>
-                </div>
-              ))}
-              {aiResponse && <AssistantLiveBubble text={aiResponse} />}
-
-              {error && (
-                <div className="p-2 bg-red-100 border border-red-300 rounded-lg text-red-800 text-xs">
-                  {error}
-                </div>
-              )}
-
-              {/* Suggestion chips */}
-              {messages.length > 0 && (
-                <div className="pt-2 flex flex-wrap gap-2">
-                  {[
-                    "Show all coffees",
-                    "Create a new coffee",
-                    "Check inventory status",
-                    "Suggest a name",
-                  ].map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className="text-xs px-2 py-1 rounded-full border hover:bg-primary/10 transition-colors text-foreground"
-                      onClick={() =>
-                        setInput((prev) => (prev ? prev + " " + s : s))
-                      }
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => onToggle(false)}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      title="Collapse sidebar"
                     >
-                      {s}
-                    </button>
-                  ))}
+                      ←
+                    </Button>
+                    <Button
+                      onClick={() => onToggle(false)}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      title="Close"
+                    >
+                      ✕
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </div>
+              </CardHeader>
 
-            {/* Composer */}
-            <div className="border-t p-3 bg-card/50 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <Input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask about your inventory..."
-                  disabled={loading || !conversationId}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  className="text-sm"
-                />
-                <Button
-                  onClick={handleSend}
-                  disabled={loading || !conversationId || !input.trim()}
-                  className="bg-primary hover:bg-primary/90 flex-shrink-0"
-                  size="sm"
+              <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
+                {/* Messages Area */}
+                <div
+                  ref={scrollRef}
+                  className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-background chat-scroll"
                 >
-                  {loading ? "..." : "→"}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        </div>
-      )}
+                  {loading && !conversationId && (
+                    <div className="flex justify-center items-center h-full">
+                      <div className="text-muted-foreground text-sm">
+                        Starting conversation...
+                      </div>
+                    </div>
+                  )}
+                  {messages.map((m, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${
+                        m.sender === "user" ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-3 py-2 shadow-sm text-xs leading-relaxed ${
+                          m.sender === "user"
+                            ? "bg-primary text-primary-foreground rounded-br-sm"
+                            : "bg-card text-foreground border rounded-bl-sm"
+                        }`}
+                      >
+                        {m.message}
+                      </div>
+                    </div>
+                  ))}
+                  {aiResponse && <AssistantLiveBubble text={aiResponse} />}
+
+                  {error && (
+                    <div className="p-2 bg-red-100 border border-red-300 rounded-lg text-red-800 text-xs">
+                      {error}
+                    </div>
+                  )}
+
+                  {/* Suggestion chips */}
+                  {messages.length > 0 && (
+                    <div className="pt-2 flex flex-wrap gap-2">
+                      {[
+                        "Show all coffees",
+                        "Create a new coffee",
+                        "Check inventory status",
+                        "Suggest a name",
+                      ].map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          className="text-xs px-2 py-1 rounded-full border hover:bg-primary/10 transition-colors text-foreground"
+                          onClick={() =>
+                            setInput((prev) => (prev ? prev + " " + s : s))
+                          }
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Composer */}
+                <div className="border-t p-3 bg-card/50 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="Ask about your inventory..."
+                      disabled={loading || !conversationId}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      className="text-sm"
+                    />
+                    <Button
+                      onClick={handleSend}
+                      disabled={loading || !conversationId || !input.trim()}
+                      className="bg-primary hover:bg-primary/90 flex-shrink-0"
+                      size="sm"
+                    >
+                      {loading ? "..." : "→"}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </>
   );
