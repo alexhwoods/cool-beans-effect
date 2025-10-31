@@ -38,6 +38,8 @@ function MessageBubble({
   isStreaming = false,
 }: MessageBubbleProps) {
   const isUser = sender === "user";
+  const isEmpty = text.trim() === "";
+  const showTypingIndicator = isEmpty && isStreaming && !isUser;
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -48,7 +50,15 @@ function MessageBubble({
             : "bg-card text-foreground border rounded-bl-sm"
         } ${isStreaming ? "opacity-90" : ""}`}
       >
-        {text}
+        {showTypingIndicator ? (
+          <div className="flex items-center gap-1 py-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-pulse"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-pulse [animation-delay:0.2s]"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60 animate-pulse [animation-delay:0.4s]"></span>
+          </div>
+        ) : (
+          text
+        )}
       </div>
     </div>
   );
