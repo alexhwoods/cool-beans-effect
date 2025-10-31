@@ -17,9 +17,13 @@ import {
 } from "@cool-beans/shared";
 import { makeRpcClient, ProtocolLive } from "@/rpc-client";
 
+type MessageStatus = "streaming" | "final" | "error";
+
 type Message = {
+  id: string;
   sender: "user" | "ai";
   message: string;
+  status: MessageStatus;
 };
 
 interface MessageBubbleProps {
@@ -62,12 +66,19 @@ export function InventoryChatbot({
   onToggle,
 }: InventoryChatbotProps) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [aiResponse, setAiResponse] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollToBottom = () => {
+    if (isExpanded && scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  };
 
   // Create conversation on mount
   useEffect(() => {
@@ -108,9 +119,11 @@ export function InventoryChatbot({
         // Add initial AI message focused on inventory management
         setMessages([
           {
+            id: crypto.randomUUID(),
             sender: "ai",
             message:
               "Hi! I'm your Inventory Assistant. I can help you manage your coffee inventory - create new coffees, suggest names, check for duplicates, and answer questions about your collection.",
+            status: "final",
           },
         ]);
       }
@@ -129,8 +142,23 @@ export function InventoryChatbot({
 
     setLoading(true);
     setError(null);
-    setAiResponse(null);
-    setMessages((prev) => [...prev, { sender: "user", message: trimmed }]);
+    // Append user message
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        sender: "user",
+        message: trimmed,
+        status: "final",
+      },
+      // Seed streaming AI message (empty text that will be progressively filled)
+      {
+        id: crypto.randomUUID(),
+        sender: "ai",
+        message: "",
+        status: "streaming",
+      },
+    ]);
 
     const request: SendUserMessageRequest = {
       conversationId,
@@ -142,9 +170,21 @@ export function InventoryChatbot({
       // Stream messages and update the live assistant bubble progressively
       yield* Stream.runForEach(client.sendUserMessage(request), (m) =>
         Effect.sync(() => {
-          setAiResponse((prev) =>
-            prev ? `${prev} ${String(m.response)}` : String(m.response)
-          );
+          const chunk = String(m.response);
+          setMessages((prev) => {
+            if (prev.length === 0) return prev;
+            const next = [...prev];
+            const lastIndex = next.length - 1;
+            const last = next[lastIndex];
+            if (last.sender === "ai" && last.status === "streaming") {
+              next[lastIndex] = {
+                ...last,
+                message: last.message ? `${last.message} ${chunk}` : chunk,
+              };
+            }
+            return next;
+          });
+          scrollToBottom();
         })
       );
     }).pipe(
@@ -159,24 +199,31 @@ export function InventoryChatbot({
 
     try {
       await Effect.runPromise(program);
-      // Commit the live bubble into the durable history and clear it (dedupe-safe)
-      setAiResponse((current) => {
-        const text = (current ?? "").trim();
-        if (text) {
-          setMessages((prev) => {
-            const last = prev[prev.length - 1];
-            if (last && last.sender === "ai" && last.message === text) {
-              return prev;
-            }
-            return [...prev, { sender: "ai", message: text }];
-          });
+      // Flip last AI message from streaming to final
+      setMessages((prev) => {
+        if (prev.length === 0) return prev;
+        const next = [...prev];
+        const lastIndex = next.length - 1;
+        const last = next[lastIndex];
+        if (last.sender === "ai" && last.status === "streaming") {
+          next[lastIndex] = { ...last, status: "final" };
         }
-        return null;
+        return next;
       });
       setInput("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to send message");
-      setAiResponse(null);
+      // Mark last AI message as error if present
+      setMessages((prev) => {
+        if (prev.length === 0) return prev;
+        const next = [...prev];
+        const lastIndex = next.length - 1;
+        const last = next[lastIndex];
+        if (last.sender === "ai" && last.status === "streaming") {
+          next[lastIndex] = { ...last, status: "error" };
+        }
+        return next;
+      });
     } finally {
       setLoading(false);
     }
@@ -259,16 +306,14 @@ export function InventoryChatbot({
                       </div>
                     </div>
                   )}
-                  {messages.map((m, index) => (
+                  {messages.map((m) => (
                     <MessageBubble
-                      key={index}
+                      key={m.id}
                       sender={m.sender}
                       text={m.message}
+                      isStreaming={m.status === "streaming"}
                     />
                   ))}
-                  {aiResponse && (
-                    <MessageBubble sender="ai" text={aiResponse} isStreaming />
-                  )}
 
                   {error && (
                     <div className="p-2 bg-red-100 border border-red-300 rounded-lg text-red-800 text-xs">
