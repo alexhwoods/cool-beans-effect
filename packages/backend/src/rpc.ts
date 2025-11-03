@@ -7,7 +7,7 @@ import { CoffeeServiceLive } from "./coffee/coffee.service";
 import { makeConversationRpcHandlers } from "../src/conversation/conversation.rpc";
 import { ConversationServiceLive } from "../src/conversation/conversation.service";
 import {
-  Gpt4oModelLive,
+  Gpt4o,
   OpenAiClientLive,
 } from "../src/conversation/conversation.client";
 
@@ -29,6 +29,5 @@ export const RpcLayerLive = RpcServer.layer(AllRpcs).pipe(
   Layer.provide(AllRpcHandlersLive),
   Layer.provide(CoffeeServiceLive),
   Layer.provide(ConversationServiceLive),
-  Layer.provide(Gpt4oModelLive),
-  Layer.provide(OpenAiClientLive)
+  Layer.provide(Layer.provide(Gpt4o, OpenAiClientLive))
 );

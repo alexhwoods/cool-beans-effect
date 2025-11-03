@@ -15,15 +15,12 @@ export class ConversationService extends Context.Tag("ConversationService")<
     readonly createConversation: () => Effect.Effect<CreateConversationResponse>;
     readonly sendUserMessage: (
       request: SendUserMessageRequest
-    ) => Stream.Stream<
-      AiResponseChunk,
-      ConversationNotFound | AiError.AiError,
-      LanguageModel.LanguageModel
-    >;
+    ) => Stream.Stream<AiResponseChunk, ConversationNotFound | AiError.AiError>;
   }
 >() {}
 
 export const ConversationServiceLive = Effect.gen(function* () {
+  const languageModel = yield* LanguageModel.LanguageModel;
   const nextIdRef = yield* Ref.make(1);
   const historiesRef = yield* Ref.make(new Map<number, AiResponseChunk[]>());
 
@@ -69,8 +66,8 @@ export const ConversationServiceLive = Effect.gen(function* () {
           //          ┌─── Effect<GenerateTextResponse<{}>, AiError, LanguageModel>
           //          ▼
           // Use the `LanguageModel` to generate some text
-          const response = yield* LanguageModel.generateText({
-            prompt: "Give me a name for a nice type of coffee",
+          const response = yield* languageModel.generateText({
+            prompt: "Generate a dad joke",
           });
           console.log(response.text);
 
