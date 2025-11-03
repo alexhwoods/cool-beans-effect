@@ -1,5 +1,4 @@
-import { Rpc, RpcGroup } from "@effect/rpc";
-import { getFooResponse, streamFoo } from "./foo";
+import { RpcGroup } from "@effect/rpc";
 import {
   listCoffees,
   createCoffee,
@@ -9,8 +8,6 @@ import {
 import { createConversation, sendUserMessage } from "./conversation";
 
 export const AllRpcs = RpcGroup.make(
-  streamFoo,
-  getFooResponse,
   listCoffees,
   createCoffee,
   updateCoffee,
