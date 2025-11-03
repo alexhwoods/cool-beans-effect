@@ -17,7 +17,9 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@effect/rpc": "^0.71.1",
-    "@effect/platform": "^0.92.1"
+    "@effect/ai": "^0.31.1",
+    "@effect/ai-openai": "^0.34.0",
+    "@effect/platform": "^0.92.1",
+    "@effect/rpc": "^0.71.1"
   }
 }

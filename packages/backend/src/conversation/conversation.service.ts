@@ -1,4 +1,5 @@
-import { Context, Effect, Layer, Ref, Stream, Random } from "effect";
+import { Context, Effect, Layer, Ref, Stream } from "effect";
+import { AiError, LanguageModel, Model } from "@effect/ai";
 import {
   AiResponseChunk,
   CoffeeSuggestion,
@@ -14,7 +15,11 @@ export class ConversationService extends Context.Tag("ConversationService")<
     readonly createConversation: () => Effect.Effect<CreateConversationResponse>;
     readonly sendUserMessage: (
       request: SendUserMessageRequest
-    ) => Stream.Stream<AiResponseChunk, ConversationNotFound>;
+    ) => Stream.Stream<
+      AiResponseChunk,
+      ConversationNotFound | AiError.AiError,
+      LanguageModel.LanguageModel
+    >;
   }
 >() {}
 
@@ -58,6 +63,16 @@ export const ConversationServiceLive = Effect.gen(function* () {
           //   ),
           //   Stream.map((word) => new AiResponseChunk({ response: word }))
           // );
+
+          // Using `LanguageModel` will add it to your program's requirements
+          //
+          //          ┌─── Effect<GenerateTextResponse<{}>, AiError, LanguageModel>
+          //          ▼
+          // Use the `LanguageModel` to generate some text
+          const response = yield* LanguageModel.generateText({
+            prompt: "Give me a name for a nice type of coffee",
+          });
+          console.log(response.text);
 
           const suggestion = new CoffeeSuggestion({
             name: "Kenya AA",

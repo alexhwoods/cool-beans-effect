@@ -6,6 +6,10 @@ import { makeCoffeeRpcHandlers } from "./coffee/coffee.rpc";
 import { CoffeeServiceLive } from "./coffee/coffee.service";
 import { makeConversationRpcHandlers } from "../src/conversation/conversation.rpc";
 import { ConversationServiceLive } from "../src/conversation/conversation.service";
+import {
+  Gpt4oModelLive,
+  OpenAiClientLive,
+} from "../src/conversation/conversation.client";
 
 // Combine all RPC handlers into a single implementation layer
 const AllRpcHandlersLive = AllRpcs.toLayer(
@@ -24,5 +28,7 @@ const AllRpcHandlersLive = AllRpcs.toLayer(
 export const RpcLayerLive = RpcServer.layer(AllRpcs).pipe(
   Layer.provide(AllRpcHandlersLive),
   Layer.provide(CoffeeServiceLive),
-  Layer.provide(ConversationServiceLive)
+  Layer.provide(ConversationServiceLive),
+  Layer.provide(Gpt4oModelLive),
+  Layer.provide(OpenAiClientLive)
 );
