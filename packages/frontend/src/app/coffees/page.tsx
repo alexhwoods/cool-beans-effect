@@ -477,6 +477,8 @@ export default function CoffeesPage() {
         <InventoryChatbot
           isExpanded={isChatbotExpanded}
           onToggle={setIsChatbotExpanded}
+          onCoffeeCreated={handleCoffeeCreated}
+          onDuplicateError={handleDuplicateError}
         />
       </div>
     </div>

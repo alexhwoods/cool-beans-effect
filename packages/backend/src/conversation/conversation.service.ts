@@ -1,6 +1,7 @@
 import { Context, Effect, Layer, Ref, Stream, Random } from "effect";
 import {
   AiResponseChunk,
+  CoffeeSuggestion,
   ConversationNotFound,
   CreateConversationResponse,
   SendUserMessageRequest,
@@ -44,25 +45,32 @@ export const ConversationServiceLive = Effect.gen(function* () {
             );
           }
 
-          const response = `Got it. You said: "${request.message}"`;
+          // const response = `Got it. You said: "${request.message}"`;
 
-          // Persist to history eagerly
-          // @todo: deal with history
-          // const updated = [...existing, userMsg, aiMsg];
-          // histories.set(request.conversationId, updated);
-          // yield* Ref.set(historiesRef, histories);
+          // // Build streaming AI reply word-by-word (accumulated)
+          // const words = response.split(" ");
+          // return Stream.fromIterable(words).pipe(
+          //   Stream.tap(() =>
+          //     Effect.gen(function* () {
+          //       const delay = yield* Random.nextIntBetween(1, 10);
+          //       yield* Effect.sleep(`${delay * 50} millis`);
+          //     })
+          //   ),
+          //   Stream.map((word) => new AiResponseChunk({ response: word }))
+          // );
 
-          // Build streaming AI reply word-by-word (accumulated)
-          const words = response.split(" ");
-          return Stream.fromIterable(words).pipe(
-            Stream.tap(() =>
-              Effect.gen(function* () {
-                const delay = yield* Random.nextIntBetween(1, 10);
-                yield* Effect.sleep(`${delay * 50} millis`);
-              })
-            ),
-            Stream.map((word) => new AiResponseChunk({ response: word }))
-          );
+          const suggestion = new CoffeeSuggestion({
+            name: "Kenya AA",
+            origin: "Kenya",
+            roast: "Medium",
+            price: 27.99,
+            weight: "12oz",
+            description: "Bright acidity with berry and wine-like notes",
+            inStock: true,
+          });
+          return Stream.fromIterable([
+            new AiResponseChunk({ response: suggestion }),
+          ]);
         }).pipe(
           Effect.withSpan("conversation.service.sendUserMessage", {
             attributes: { "conversation.id": (request as any).conversationId },
