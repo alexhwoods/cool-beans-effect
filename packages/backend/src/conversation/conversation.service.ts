@@ -1,5 +1,5 @@
-import { Context, Effect, Layer, Ref, Stream } from "effect";
-import { AiError, LanguageModel, Model } from "@effect/ai";
+import { Context, Effect, Layer, Ref, Schema, Stream } from "effect";
+import { AiError, LanguageModel } from "@effect/ai";
 import {
   AiResponseChunk,
   CoffeeSuggestion,
@@ -47,39 +47,15 @@ export const ConversationServiceLive = Effect.gen(function* () {
             );
           }
 
-          // const response = `Got it. You said: "${request.message}"`;
+          // Generate a coffee suggestion using structured output
+          const CoffeeSuggestionSchema = Schema.Struct(CoffeeSuggestion.fields);
 
-          // // Build streaming AI reply word-by-word (accumulated)
-          // const words = response.split(" ");
-          // return Stream.fromIterable(words).pipe(
-          //   Stream.tap(() =>
-          //     Effect.gen(function* () {
-          //       const delay = yield* Random.nextIntBetween(1, 10);
-          //       yield* Effect.sleep(`${delay * 50} millis`);
-          //     })
-          //   ),
-          //   Stream.map((word) => new AiResponseChunk({ response: word }))
-          // );
-
-          // Using `LanguageModel` will add it to your program's requirements
-          //
-          //          ┌─── Effect<GenerateTextResponse<{}>, AiError, LanguageModel>
-          //          ▼
-          // Use the `LanguageModel` to generate some text
-          const response = yield* languageModel.generateText({
-            prompt: "Generate a dad joke",
+          const response = yield* languageModel.generateObject({
+            prompt: request.message,
+            schema: CoffeeSuggestionSchema,
           });
-          console.log(response.text);
 
-          const suggestion = new CoffeeSuggestion({
-            name: "Kenya AA",
-            origin: "Kenya",
-            roast: "Medium",
-            price: 27.99,
-            weight: "12oz",
-            description: "Bright acidity with berry and wine-like notes",
-            inStock: true,
-          });
+          const suggestion = new CoffeeSuggestion(response.value);
           return Stream.fromIterable([
             new AiResponseChunk({ response: suggestion }),
           ]);

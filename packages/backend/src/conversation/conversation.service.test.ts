@@ -17,9 +17,17 @@ import { Stream } from "effect";
 
 // Mock LanguageModel implementation
 const mockLanguageModelImpl = {
-  generateText: (options: { prompt: string }) =>
+  generateObject: (options: { prompt: string; schema: any }) =>
     Effect.succeed({
-      text: `Mocked response for: ${options.prompt}`,
+      value: {
+        name: "Mocked Coffee",
+        origin: "Mocked Origin",
+        roast: "Medium",
+        price: 25.99,
+        weight: "12oz",
+        description: `Mocked coffee suggestion based on: ${options.prompt}`,
+        inStock: true,
+      },
       finishReason: "stop" as const,
       usage: {
         promptTokens: 10,
@@ -121,23 +129,34 @@ describe("ConversationService", () => {
     }).pipe(Effect.provide(ConversationServiceTestLayer))
   );
 
-  test.effect("uses mocked language model to generate text", () =>
+  test.effect("uses mocked language model to generate coffee suggestion", () =>
     Effect.gen(function* () {
       // Arrange
       const conversationService = yield* ConversationService;
       const conversation = yield* conversationService.createConversation();
       const request: SendUserMessageRequest = {
         conversationId: conversation.id,
-        message: "Test message",
+        message: "I want a dark roast coffee from Colombia",
       };
 
       // Act
-      yield* Stream.runCollect(conversationService.sendUserMessage(request));
+      const chunks = yield* Stream.runCollect(
+        conversationService.sendUserMessage(request)
+      );
 
-      // The test verifies that the service successfully calls the mocked
-      // LanguageModel.generateText method without throwing an error.
-      // In a real scenario, you might want to verify the mocked response
-      // was used, but the current implementation doesn't expose that.
+      // Assert
+      const chunksArray = Array.from(chunks);
+      expect(chunksArray.length).toBeGreaterThan(0);
+      const firstChunk = chunksArray[0];
+      expect(firstChunk).toBeInstanceOf(AiResponseChunk);
+      expect(firstChunk.response).toBeInstanceOf(CoffeeSuggestion);
+
+      // Verify the mocked coffee suggestion was generated
+      const suggestion = firstChunk.response as CoffeeSuggestion;
+      expect(suggestion.name).toBe("Mocked Coffee");
+      expect(suggestion.description).toContain(
+        "I want a dark roast coffee from Colombia"
+      );
     }).pipe(Effect.provide(ConversationServiceTestLayer))
   );
 });
