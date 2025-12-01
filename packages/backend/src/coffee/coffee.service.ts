@@ -9,7 +9,10 @@ import {
 export class CoffeeService extends Context.Tag("CoffeeService")<
   CoffeeService,
   {
-    readonly list: ({ name }: { name?: string }) => Effect.Effect<Coffee[]>;
+    readonly list: ({
+      name,
+      id,
+    }: { name?: string; id?: number }) => Effect.Effect<Coffee[]>;
     readonly generateSuggestion: (name: string) => Effect.Effect<string>;
     // do not reuse RPC Schema types for input here
     // that's a different abstraction level
