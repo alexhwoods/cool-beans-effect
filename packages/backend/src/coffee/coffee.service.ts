@@ -201,15 +201,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         return newCoffee;
       }).pipe(
         Effect.withSpan("coffee.service.create", {
-          attributes: {
-            "coffee.name": coffeeData.name,
-            "coffee.origin": coffeeData.origin,
-            "coffee.roast": coffeeData.roast,
-            "coffee.price": coffeeData.price,
-            "coffee.weight": coffeeData.weight,
-            "coffee.description": coffeeData.description,
-            "coffee.inStock": coffeeData.inStock,
-          },
+          attributes: { coffeeData },
         })
       ),
 

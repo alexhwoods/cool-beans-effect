@@ -2,7 +2,7 @@ import { describe, expect } from "bun:test";
 import { test } from "../test-utils/bun-test";
 import { Effect, Either } from "effect";
 import { CoffeeService, CoffeeServiceLive } from "./coffee.service";
-import { CreateCoffeeRequest } from "@cool-beans/shared";
+import { CreateCoffeeRequest, CoffeeNotFound } from "@cool-beans/shared";
 
 describe("CoffeeService", () => {
   test.effect("can create a coffee", () =>
@@ -164,5 +164,134 @@ describe("CoffeeService", () => {
         // Assert
         expect(coffees.length).toBe(0);
       }).pipe(Effect.provide(CoffeeServiceLive))
+  );
+
+  test.effect("can update a coffee", () =>
+    Effect.gen(function* () {
+      // Arrange
+      const coffeeService = yield* CoffeeService;
+      const updateData = {
+        name: "Updated Ethiopian Yirgacheffe",
+        origin: "Ethiopia",
+        roast: "Dark",
+        price: 29.99,
+        weight: "16oz",
+        description: "Updated description with new tasting notes",
+        inStock: false,
+      };
+
+      // Act
+      const result = yield* Effect.either(coffeeService.update(1, updateData));
+
+      // Assert
+      expect(Either.isRight(result)).toBe(true);
+      if (Either.isRight(result)) {
+        const coffee = result.right;
+        expect(coffee.id).toBe(1);
+        expect(coffee.name).toBe(updateData.name);
+        expect(coffee.origin).toBe(updateData.origin);
+        expect(coffee.roast).toBe(updateData.roast);
+        expect(coffee.price).toBe(updateData.price);
+        expect(coffee.weight).toBe(updateData.weight);
+        expect(coffee.description).toBe(updateData.description);
+        expect(coffee.inStock).toBe(updateData.inStock);
+      }
+    }).pipe(Effect.provide(CoffeeServiceLive))
+  );
+
+  test.effect("update persists changes to the coffee", () =>
+    Effect.gen(function* () {
+      // Arrange
+      const coffeeService = yield* CoffeeService;
+      const updateData = {
+        name: "Persisted Update Test",
+        origin: "Brazil",
+        roast: "Medium",
+        price: 19.99,
+        weight: "10oz",
+        description: "This update should persist",
+        inStock: true,
+      };
+
+      // Act
+      yield* coffeeService.update(2, updateData);
+      const coffees = yield* coffeeService.list({ id: 2 });
+
+      // Assert
+      expect(coffees.length).toBe(1);
+      const updatedCoffee = coffees[0];
+      expect(updatedCoffee.id).toBe(2);
+      expect(updatedCoffee.name).toBe(updateData.name);
+      expect(updatedCoffee.origin).toBe(updateData.origin);
+      expect(updatedCoffee.roast).toBe(updateData.roast);
+      expect(updatedCoffee.price).toBe(updateData.price);
+      expect(updatedCoffee.weight).toBe(updateData.weight);
+      expect(updatedCoffee.description).toBe(updateData.description);
+      expect(updatedCoffee.inStock).toBe(updateData.inStock);
+    }).pipe(Effect.provide(CoffeeServiceLive))
+  );
+
+  test.effect("update returns CoffeeNotFound when coffee doesn't exist", () =>
+    Effect.gen(function* () {
+      // Arrange
+      const coffeeService = yield* CoffeeService;
+      const updateData = {
+        name: "Non-existent Coffee",
+        origin: "Nowhere",
+        roast: "Light",
+        price: 10.99,
+        weight: "8oz",
+        description: "This coffee doesn't exist",
+        inStock: true,
+      };
+
+      // Act
+      const result = yield* Effect.either(
+        coffeeService.update(99999, updateData)
+      );
+
+      // Assert
+      expect(Either.isLeft(result)).toBe(true);
+      if (Either.isLeft(result)) {
+        expect(result.left).toBeInstanceOf(CoffeeNotFound);
+        if (result.left instanceof CoffeeNotFound) {
+          expect(result.left.id).toBe(99999);
+        }
+      }
+    }).pipe(Effect.provide(CoffeeServiceLive))
+  );
+
+  test.effect("can update all fields of a coffee", () =>
+    Effect.gen(function* () {
+      // Arrange
+      const coffeeService = yield* CoffeeService;
+      const originalCoffee = (yield* coffeeService.list({ id: 3 }))[0];
+      const updateData = {
+        name: "Completely New Name",
+        origin: "New Origin",
+        roast: "New Roast",
+        price: 99.99,
+        weight: "20oz",
+        description: "Completely new description",
+        inStock: !originalCoffee.inStock,
+      };
+
+      // Act
+      const result = yield* Effect.either(coffeeService.update(3, updateData));
+
+      // Assert
+      expect(Either.isRight(result)).toBe(true);
+      if (Either.isRight(result)) {
+        const coffee = result.right;
+        expect(coffee.id).toBe(3);
+        expect(coffee.name).not.toBe(originalCoffee.name);
+        expect(coffee.origin).not.toBe(originalCoffee.origin);
+        expect(coffee.roast).not.toBe(originalCoffee.roast);
+        expect(coffee.price).not.toBe(originalCoffee.price);
+        expect(coffee.weight).not.toBe(originalCoffee.weight);
+        expect(coffee.description).not.toBe(originalCoffee.description);
+        expect(coffee.inStock).not.toBe(originalCoffee.inStock);
+      }
+    }).pipe(Effect.provide(CoffeeServiceLive))
   );
 });
