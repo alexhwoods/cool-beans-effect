@@ -91,6 +91,19 @@ export const CoffeeServiceLive = Effect.gen(function* () {
   const coffeeRef = yield* Ref.make(initialCoffees);
   let nextId = Math.max(...initialCoffees.map((c) => c.id)) + 1;
 
+  // Helper function for generating suggestions
+  const generateSuggestion = (name: string, coffees: Coffee[]): string => {
+    let suggestion = name;
+    let counter = 2;
+    while (
+      coffees.some((c) => c.name.toLowerCase() === suggestion.toLowerCase())
+    ) {
+      suggestion = `${name} ${counter}`;
+      counter++;
+    }
+    return suggestion;
+  };
+
   return CoffeeService.of({
     listCoffees: () =>
       Ref.get(coffeeRef).pipe(Effect.withSpan("coffee.service.listCoffees")),
@@ -105,17 +118,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         );
 
         if (existingCoffee) {
-          // Generate a suggestion by appending a number
-          let suggestion = request.name;
-          let counter = 2;
-          while (
-            coffees.some(
-              (c) => c.name.toLowerCase() === suggestion.toLowerCase()
-            )
-          ) {
-            suggestion = `${request.name} ${counter}`;
-            counter++;
-          }
+          const suggestion = generateSuggestion(request.name, coffees);
 
           yield* Effect.fail(
             new CoffeeAlreadyExists({
