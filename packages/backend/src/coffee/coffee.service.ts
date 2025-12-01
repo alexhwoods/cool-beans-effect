@@ -187,7 +187,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         }
 
         const newCoffee = new Coffee({
-          id: (yield* Ref.get(coffeeRef)).length + 1,
+          id: (yield* Ref.get(coffeeRef)).length + 1 + 1, // 1 cuz 0-index, 1 cuz we're adding a new coffee
           name: coffeeData.name,
           origin: coffeeData.origin,
           roast: coffeeData.roast,

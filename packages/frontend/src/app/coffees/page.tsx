@@ -15,12 +15,11 @@ import {
 import { CreateCoffeeDialog } from "./components/create-coffee-dialog";
 import { EditCoffeeDialog } from "./components/edit-coffee-dialog";
 import { DuplicateCoffeeDialog } from "./components/duplicate-coffee-dialog";
-import { Effect, Layer, Match } from "effect";
+import { Effect } from "effect";
 import {
   Coffee,
   CreateCoffeeRequest,
   DeleteCoffeeRequest,
-  CoffeeAlreadyExists,
 } from "@cool-beans/shared";
 import { makeRpcClient, ProtocolLive } from "@/rpc-client";
 import { generateRandomCoffeeRequest } from "@/lib/coffee-utils";
@@ -33,7 +32,7 @@ export default function CoffeesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
-  const [duplicateError, setDuplicateError] = useState<{
+  const [duplicateCoffee, setDuplicateCoffee] = useState<{
     attemptedName: string;
     suggestion: string;
     coffeeData: CreateCoffeeRequest;
@@ -76,12 +75,12 @@ export default function CoffeesPage() {
     setCoffees([...coffees, coffee]);
   };
 
-  const handleDuplicateError = (error: {
+  const handleDuplicateCoffee = (error: {
     attemptedName: string;
     suggestion: string;
     coffeeData: CreateCoffeeRequest;
   }) => {
-    setDuplicateError(error);
+    setDuplicateCoffee(error);
     setIsDuplicateDialogOpen(true);
   };
 
@@ -125,7 +124,7 @@ export default function CoffeesPage() {
 
   const handleDuplicateDialogClose = () => {
     setIsDuplicateDialogOpen(false);
-    setDuplicateError(null);
+    setDuplicateCoffee(null);
   };
 
   const generateRandomCoffee = async () => {
@@ -140,8 +139,8 @@ export default function CoffeesPage() {
       Effect.catchTags({
         CoffeeAlreadyExists: (err) => {
           return Effect.sync(() => {
-            // Show duplicate dialog instead of error banner
-            handleDuplicateError({
+            // Prompt the user with the suggestion
+            handleDuplicateCoffee({
               attemptedName: err.name,
               suggestion: err.suggestion || `${request.name} 2`,
               coffeeData: request,
@@ -331,7 +330,7 @@ export default function CoffeesPage() {
                 isOpen={isCreateOpen}
                 onOpenChange={setIsCreateOpen}
                 onCoffeeCreated={handleCoffeeCreated}
-                onDuplicateError={handleDuplicateError}
+                onDuplicateError={handleDuplicateCoffee}
               />
 
               <EditCoffeeDialog
@@ -345,7 +344,7 @@ export default function CoffeesPage() {
               <DuplicateCoffeeDialog
                 isOpen={isDuplicateDialogOpen}
                 onOpenChange={handleDuplicateDialogClose}
-                duplicateError={duplicateError}
+                duplicateError={duplicateCoffee}
                 onCoffeeCreated={handleCoffeeCreated}
                 onError={setError}
               />
