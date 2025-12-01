@@ -117,18 +117,19 @@ export const CoffeeServiceLive = Effect.gen(function* () {
   const self: Context.Tag.Service<typeof CoffeeService> = {
     list: ({ name, id }: { name?: string; id?: number } = {}) =>
       Ref.get(coffeeRef).pipe(
-        Effect.map((coffees) => {
-          let filtered = coffees;
-          if (name) {
-            filtered = filtered.filter((c) =>
-              c.name.toLowerCase().includes(name.toLowerCase())
-            );
-          }
-          if (id !== undefined) {
-            filtered = filtered.filter((c) => c.id === id);
-          }
-          return filtered;
-        }),
+        Effect.map((coffees) =>
+          coffees.filter((coffee) => {
+            if (name !== undefined) {
+              return coffee.name.toLowerCase().includes(name.toLowerCase());
+            }
+
+            if (id !== undefined) {
+              return coffee.id === id;
+            }
+
+            return true;
+          })
+        ),
         Effect.withSpan("coffee.service.list", {
           attributes: {
             ...(name ? { "coffee.filter.name": name } : {}),
