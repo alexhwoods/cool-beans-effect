@@ -15,10 +15,10 @@ export class CoffeeService extends Context.Tag("CoffeeService")<
     readonly create: (
       request: CreateCoffeeRequest
     ) => Effect.Effect<Coffee, CoffeeAlreadyExists>;
-    readonly updateCoffee: (
+    readonly update: (
       request: UpdateCoffeeRequest
     ) => Effect.Effect<Coffee, CoffeeNotFound>;
-    readonly deleteCoffee: (id: number) => Effect.Effect<void, CoffeeNotFound>;
+    readonly delete: (id: number) => Effect.Effect<void, CoffeeNotFound>;
   }
 >() {}
 
@@ -157,7 +157,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         })
       ),
 
-    updateCoffee: (request: UpdateCoffeeRequest) =>
+    update: (request: UpdateCoffeeRequest) =>
       Effect.gen(function* () {
         const coffees = yield* self.list();
 
@@ -184,7 +184,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
 
         return coffee;
       }).pipe(
-        Effect.withSpan("coffee.service.updateCoffee", {
+        Effect.withSpan("coffee.service.update", {
           attributes: {
             "coffee.id": request.id,
             "coffee.name": request.name,
@@ -192,7 +192,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         })
       ),
 
-    deleteCoffee: (id: number) =>
+    delete: (id: number) =>
       Effect.gen(function* () {
         const coffees = yield* self.list();
 
@@ -205,7 +205,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         const filteredCoffees = coffees.filter((c) => c.id !== id);
         yield* Ref.set(coffeeRef, filteredCoffees);
       }).pipe(
-        Effect.withSpan("coffee.service.deleteCoffee", {
+        Effect.withSpan("coffee.service.delete", {
           attributes: { "coffee.id": id },
         })
       ),

@@ -19,13 +19,13 @@ export const makeCoffeeRpcHandlers = Effect.gen(function* () {
         })
       ),
     updateCoffee: (request: UpdateCoffeeRequest) =>
-      coffeeService.updateCoffee(request).pipe(
+      coffeeService.update(request).pipe(
         Effect.withSpan("coffee.rpc.updateCoffee", {
           attributes: { "coffee.id": request.id, "coffee.name": request.name },
         })
       ),
     deleteCoffee: (request: DeleteCoffeeRequest) =>
-      coffeeService.deleteCoffee(request.id).pipe(
+      coffeeService.delete(request.id).pipe(
         Effect.withSpan("coffee.rpc.deleteCoffee", {
           attributes: { "coffee.id": request.id },
         })
