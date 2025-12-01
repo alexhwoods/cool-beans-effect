@@ -145,6 +145,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         })
       ),
 
+    // @note: This could be internal. I'm exposing it to show self-referencing
     generateSuggestion: (name: string) =>
       Effect.gen(function* () {
         const coffees = yield* self.list({});
