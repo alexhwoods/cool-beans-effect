@@ -112,36 +112,35 @@ export const CoffeeServiceLive = Effect.gen(function* () {
   // While we have little concurrency, this may be unnecessary, but probably a good idea to
   // go ahead and use this. https://effect.website/docs/state-management/ref/
   const coffeeRef = yield* Ref.make(initialCoffees);
-  let nextId = Math.max(...initialCoffees.map((c) => c.id)) + 1;
 
   const self: Context.Tag.Service<typeof CoffeeService> = {
-    list: ({ name, id }: { name?: string; id?: number } = {}) =>
+    list: (filters: { name?: string; id?: number } = {}) =>
       Ref.get(coffeeRef).pipe(
         Effect.map((coffees) =>
           coffees.filter((coffee) => {
-            if (name !== undefined && id !== undefined) {
+            const coffeeName = coffee.name.toLowerCase();
+
+            // must handle AND case in addition to OR case
+            if (filters.name !== undefined && filters.id !== undefined) {
               return (
-                coffee.name.toLowerCase().includes(name.toLowerCase()) &&
-                coffee.id === id
+                coffeeName.includes(filters.name.toLowerCase()) &&
+                coffee.id === filters.id
               );
             }
 
-            if (name !== undefined) {
-              return coffee.name.toLowerCase().includes(name.toLowerCase());
+            if (filters.name !== undefined) {
+              return coffeeName.includes(filters.name.toLowerCase());
             }
 
-            if (id !== undefined) {
-              return coffee.id === id;
+            if (filters.id !== undefined) {
+              return coffee.id === filters.id;
             }
 
             return true;
           })
         ),
         Effect.withSpan("coffee.service.list", {
-          attributes: {
-            ...(name ? { "coffee.filter.name": name } : {}),
-            ...(id !== undefined ? { "coffee.filter.id": id } : {}),
-          },
+          attributes: { filters },
         })
       ),
 
@@ -186,7 +185,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         }
 
         const newCoffee = new Coffee({
-          id: nextId++,
+          id: (yield* Ref.get(coffeeRef)).length + 1,
           name: coffeeData.name,
           origin: coffeeData.origin,
           roast: coffeeData.roast,
