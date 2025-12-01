@@ -21,7 +21,6 @@ import {
 import { CreateCoffeeDialog } from "./components/create-coffee-dialog";
 import { EditCoffeeDialog } from "./components/edit-coffee-dialog";
 import { DuplicateCoffeeDialog } from "./components/duplicate-coffee-dialog";
-import { InventoryChatbot } from "./components/inventory-chatbot";
 import { Effect, Layer, Match } from "effect";
 import {
   Coffee,
@@ -46,7 +45,6 @@ export default function CoffeesPage() {
     suggestion: string;
     coffeeData: CreateCoffeeRequest;
   } | null>(null);
-  const [isChatbotExpanded, setIsChatbotExpanded] = useState(false);
 
   // Load coffees on component mount
   useEffect(() => {
@@ -313,14 +311,10 @@ export default function CoffeesPage() {
         </div>
       </header>
 
-      {/* Main Content with Sidebar */}
+      {/* Main Content */}
       <div className="flex relative">
         {/* Main Content Area - Scrollable */}
-        <div
-          className={`flex-1 transition-all duration-300 ease-in-out ${
-            isChatbotExpanded ? "pr-96" : "pr-0"
-          }`}
-        >
+        <div className="flex-1">
           <div className="min-h-[calc(100vh-88px)]">
             <div className="pt-8 pb-8 px-6 max-w-7xl mx-auto">
               {error && (
@@ -472,14 +466,6 @@ export default function CoffeesPage() {
             </div>
           </div>
         </div>
-
-        {/* Inventory Chatbot Sidebar */}
-        <InventoryChatbot
-          isExpanded={isChatbotExpanded}
-          onToggle={setIsChatbotExpanded}
-          onCoffeeCreated={handleCoffeeCreated}
-          onDuplicateError={handleDuplicateError}
-        />
       </div>
     </div>
   );

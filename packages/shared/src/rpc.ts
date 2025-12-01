@@ -5,13 +5,10 @@ import {
   updateCoffee,
   deleteCoffee,
 } from "./coffee";
-import { createConversation, sendUserMessage } from "./conversation";
 
 export const AllRpcs = RpcGroup.make(
   listCoffees,
   createCoffee,
   updateCoffee,
-  deleteCoffee,
-  createConversation,
-  sendUserMessage
+  deleteCoffee
 );
