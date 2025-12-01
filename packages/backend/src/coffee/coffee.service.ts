@@ -1,8 +1,6 @@
 import { Context, Effect, Layer, Ref } from "effect";
 import {
   Coffee,
-  CreateCoffeeRequest,
-  UpdateCoffeeRequest,
   CoffeeNotFound,
   CoffeeAlreadyExists,
 } from "@cool-beans/shared";
@@ -12,11 +10,28 @@ export class CoffeeService extends Context.Tag("CoffeeService")<
   {
     readonly list: () => Effect.Effect<Coffee[]>;
     readonly generateSuggestion: (name: string) => Effect.Effect<string>;
-    readonly create: (
-      request: CreateCoffeeRequest
-    ) => Effect.Effect<Coffee, CoffeeAlreadyExists>;
+    // do not reuse RPC Schema types for input here
+    // that's a different abstraction level
+    readonly create: (input: {
+      name: string;
+      origin: string;
+      roast: string;
+      price: number;
+      weight: string;
+      description: string;
+      inStock: boolean;
+    }) => Effect.Effect<Coffee, CoffeeAlreadyExists>;
     readonly update: (
-      request: UpdateCoffeeRequest
+      id: number,
+      input: {
+        name: string;
+        origin: string;
+        roast: string;
+        price: number;
+        weight: string;
+        description: string;
+        inStock: boolean;
+      }
     ) => Effect.Effect<Coffee, CoffeeNotFound>;
     readonly delete: (id: number) => Effect.Effect<void, CoffeeNotFound>;
   }
@@ -113,21 +128,29 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         })
       ),
 
-    create: (request: CreateCoffeeRequest) =>
+    create: (coffeeData: {
+      name: string;
+      origin: string;
+      roast: string;
+      price: number;
+      weight: string;
+      description: string;
+      inStock: boolean;
+    }) =>
       Effect.gen(function* () {
         const coffees = yield* self.list();
 
         // Check if coffee with this name already exists
         const existingCoffee = coffees.find(
-          (c) => c.name.toLowerCase() === request.name.toLowerCase()
+          (c) => c.name.toLowerCase() === coffeeData.name.toLowerCase()
         );
 
         if (existingCoffee) {
-          const suggestion = yield* self.generateSuggestion(request.name);
+          const suggestion = yield* self.generateSuggestion(coffeeData.name);
 
           yield* Effect.fail(
             new CoffeeAlreadyExists({
-              name: request.name,
+              name: coffeeData.name,
               suggestion,
             })
           );
@@ -135,13 +158,13 @@ export const CoffeeServiceLive = Effect.gen(function* () {
 
         const coffee = new Coffee({
           id: nextId++,
-          name: request.name,
-          origin: request.origin,
-          roast: request.roast,
-          price: request.price,
-          weight: request.weight,
-          description: request.description,
-          inStock: request.inStock,
+          name: coffeeData.name,
+          origin: coffeeData.origin,
+          roast: coffeeData.roast,
+          price: coffeeData.price,
+          weight: coffeeData.weight,
+          description: coffeeData.description,
+          inStock: coffeeData.inStock,
         });
 
         yield* Ref.set(coffeeRef, [...coffees, coffee]);
@@ -149,33 +172,47 @@ export const CoffeeServiceLive = Effect.gen(function* () {
       }).pipe(
         Effect.withSpan("coffee.service.create", {
           attributes: {
-            "coffee.name": request.name,
-            "coffee.origin": request.origin,
-            "coffee.roast": request.roast,
-            "coffee.price": request.price,
+            "coffee.name": coffeeData.name,
+            "coffee.origin": coffeeData.origin,
+            "coffee.roast": coffeeData.roast,
+            "coffee.price": coffeeData.price,
+            "coffee.weight": coffeeData.weight,
+            "coffee.description": coffeeData.description,
+            "coffee.inStock": coffeeData.inStock,
           },
         })
       ),
 
-    update: (request: UpdateCoffeeRequest) =>
+    update: (
+      id: number,
+      coffeeData: {
+        name: string;
+        origin: string;
+        roast: string;
+        price: number;
+        weight: string;
+        description: string;
+        inStock: boolean;
+      }
+    ) =>
       Effect.gen(function* () {
         const coffees = yield* self.list();
 
-        const coffeeIndex = coffees.findIndex((c) => c.id === request.id);
+        const coffeeIndex = coffees.findIndex((c) => c.id === id);
 
         if (coffeeIndex === -1) {
-          yield* Effect.fail(new CoffeeNotFound({ id: request.id }));
+          yield* Effect.fail(new CoffeeNotFound({ id }));
         }
 
         const coffee = new Coffee({
-          id: request.id,
-          name: request.name,
-          origin: request.origin,
-          roast: request.roast,
-          price: request.price,
-          weight: request.weight,
-          description: request.description,
-          inStock: request.inStock,
+          id,
+          name: coffeeData.name,
+          origin: coffeeData.origin,
+          roast: coffeeData.roast,
+          price: coffeeData.price,
+          weight: coffeeData.weight,
+          description: coffeeData.description,
+          inStock: coffeeData.inStock,
         });
 
         const updatedCoffees = [...coffees];
@@ -186,8 +223,14 @@ export const CoffeeServiceLive = Effect.gen(function* () {
       }).pipe(
         Effect.withSpan("coffee.service.update", {
           attributes: {
-            "coffee.id": request.id,
-            "coffee.name": request.name,
+            "coffee.id": id,
+            "coffee.name": coffeeData.name,
+            "coffee.origin": coffeeData.origin,
+            "coffee.roast": coffeeData.roast,
+            "coffee.price": coffeeData.price,
+            "coffee.weight": coffeeData.weight,
+            "coffee.description": coffeeData.description,
+            "coffee.inStock": coffeeData.inStock,
           },
         })
       ),
