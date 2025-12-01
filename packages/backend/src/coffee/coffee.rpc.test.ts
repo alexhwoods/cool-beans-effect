@@ -13,16 +13,6 @@ beforeAll(async () => {
   ClientLive = await createRpcClientLayer();
 });
 
-describe("Bar", () => {
-  test.effect("bar should return a string", () =>
-    Effect.gen(function* () {
-      const x = "foo";
-      console.log(x);
-      expect(x).toBe("foo");
-    }).pipe(Effect.provide(ClientLive))
-  );
-});
-
 describe("Coffee RPC E2E", () => {
   describe("createCoffee", () => {
     test.effect("createCoffee should create a new coffee", () =>
