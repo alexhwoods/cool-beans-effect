@@ -119,6 +119,13 @@ export const CoffeeServiceLive = Effect.gen(function* () {
       Ref.get(coffeeRef).pipe(
         Effect.map((coffees) =>
           coffees.filter((coffee) => {
+            if (name !== undefined && id !== undefined) {
+              return (
+                coffee.name.toLowerCase().includes(name.toLowerCase()) &&
+                coffee.id === id
+              );
+            }
+
             if (name !== undefined) {
               return coffee.name.toLowerCase().includes(name.toLowerCase());
             }
