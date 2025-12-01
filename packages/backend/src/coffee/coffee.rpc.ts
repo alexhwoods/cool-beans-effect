@@ -11,11 +11,9 @@ export const makeCoffeeRpcHandlers = Effect.gen(function* () {
 
   return {
     listCoffees: () =>
-      coffeeService
-        .listCoffees()
-        .pipe(Effect.withSpan("coffee.rpc.listCoffees")),
+      coffeeService.list().pipe(Effect.withSpan("coffee.rpc.listCoffees")),
     createCoffee: (request: CreateCoffeeRequest) =>
-      coffeeService.createCoffee(request).pipe(
+      coffeeService.create(request).pipe(
         Effect.withSpan("coffee.rpc.createCoffee", {
           attributes: { "coffee.name": request.name },
         })

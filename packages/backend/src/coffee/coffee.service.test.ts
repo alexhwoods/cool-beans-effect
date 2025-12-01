@@ -21,7 +21,7 @@ describe("CoffeeService", () => {
 
       // Act
       const result = yield* Effect.either(
-        coffeeService.createCoffee(newCoffeeRequest)
+        coffeeService.create(newCoffeeRequest)
       );
 
       // Assert

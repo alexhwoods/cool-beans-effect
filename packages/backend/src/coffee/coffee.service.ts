@@ -10,9 +10,9 @@ import {
 export class CoffeeService extends Context.Tag("CoffeeService")<
   CoffeeService,
   {
-    readonly listCoffees: () => Effect.Effect<Coffee[]>;
+    readonly list: () => Effect.Effect<Coffee[]>;
     readonly generateSuggestion: (name: string) => Effect.Effect<string>;
-    readonly createCoffee: (
+    readonly create: (
       request: CreateCoffeeRequest
     ) => Effect.Effect<Coffee, CoffeeAlreadyExists>;
     readonly updateCoffee: (
@@ -93,12 +93,11 @@ export const CoffeeServiceLive = Effect.gen(function* () {
   let nextId = Math.max(...initialCoffees.map((c) => c.id)) + 1;
 
   const self: Context.Tag.Service<typeof CoffeeService> = {
-    listCoffees: () =>
-      Ref.get(coffeeRef).pipe(Effect.withSpan("coffee.service.listCoffees")),
+    list: () => Ref.get(coffeeRef).pipe(Effect.withSpan("coffee.service.list")),
 
     generateSuggestion: (name: string) =>
       Effect.gen(function* () {
-        const coffees = yield* self.listCoffees();
+        const coffees = yield* self.list();
         let suggestion = name;
         let counter = 2;
         while (
@@ -114,9 +113,9 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         })
       ),
 
-    createCoffee: (request: CreateCoffeeRequest) =>
+    create: (request: CreateCoffeeRequest) =>
       Effect.gen(function* () {
-        const coffees = yield* self.listCoffees();
+        const coffees = yield* self.list();
 
         // Check if coffee with this name already exists
         const existingCoffee = coffees.find(
@@ -148,7 +147,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         yield* Ref.set(coffeeRef, [...coffees, coffee]);
         return coffee;
       }).pipe(
-        Effect.withSpan("coffee.service.createCoffee", {
+        Effect.withSpan("coffee.service.create", {
           attributes: {
             "coffee.name": request.name,
             "coffee.origin": request.origin,
@@ -160,7 +159,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
 
     updateCoffee: (request: UpdateCoffeeRequest) =>
       Effect.gen(function* () {
-        const coffees = yield* self.listCoffees();
+        const coffees = yield* self.list();
 
         const coffeeIndex = coffees.findIndex((c) => c.id === request.id);
 
@@ -195,7 +194,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
 
     deleteCoffee: (id: number) =>
       Effect.gen(function* () {
-        const coffees = yield* self.listCoffees();
+        const coffees = yield* self.list();
 
         const coffeeExists = coffees.some((c) => c.id === id);
 
