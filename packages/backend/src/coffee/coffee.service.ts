@@ -12,7 +12,10 @@ export class CoffeeService extends Context.Tag("CoffeeService")<
     readonly list: ({
       name,
       id,
-    }: { name?: string; id?: number }) => Effect.Effect<Coffee[]>;
+    }: {
+      name?: string;
+      id?: number;
+    }) => Effect.Effect<Coffee[]>;
     readonly generateSuggestion: (name: string) => Effect.Effect<string>;
     // do not reuse RPC Schema types for input here
     // that's a different abstraction level
@@ -112,17 +115,25 @@ export const CoffeeServiceLive = Effect.gen(function* () {
   let nextId = Math.max(...initialCoffees.map((c) => c.id)) + 1;
 
   const self: Context.Tag.Service<typeof CoffeeService> = {
-    list: ({ name }: { name?: string } = {}) =>
+    list: ({ name, id }: { name?: string; id?: number } = {}) =>
       Ref.get(coffeeRef).pipe(
-        Effect.map((coffees) =>
-          name
-            ? coffees.filter((c) =>
-                c.name.toLowerCase().includes(name.toLowerCase())
-              )
-            : coffees
-        ),
+        Effect.map((coffees) => {
+          let filtered = coffees;
+          if (name) {
+            filtered = filtered.filter((c) =>
+              c.name.toLowerCase().includes(name.toLowerCase())
+            );
+          }
+          if (id !== undefined) {
+            filtered = filtered.filter((c) => c.id === id);
+          }
+          return filtered;
+        }),
         Effect.withSpan("coffee.service.list", {
-          attributes: name ? { "coffee.filter.name": name } : {},
+          attributes: {
+            ...(name ? { "coffee.filter.name": name } : {}),
+            ...(id !== undefined ? { "coffee.filter.id": id } : {}),
+          },
         })
       ),
 
