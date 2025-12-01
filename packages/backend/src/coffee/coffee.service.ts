@@ -2,13 +2,14 @@ import { Context, Effect, Layer, Ref } from "effect";
 import {
   Coffee,
   CoffeeNotFound,
+  // Is it right to throw these errors at the service level and have no mapping?
   CoffeeAlreadyExists,
 } from "@cool-beans/shared";
 
 export class CoffeeService extends Context.Tag("CoffeeService")<
   CoffeeService,
   {
-    readonly list: () => Effect.Effect<Coffee[]>;
+    readonly list: ({ name }: { name?: string }) => Effect.Effect<Coffee[]>;
     readonly generateSuggestion: (name: string) => Effect.Effect<string>;
     // do not reuse RPC Schema types for input here
     // that's a different abstraction level
@@ -108,11 +109,23 @@ export const CoffeeServiceLive = Effect.gen(function* () {
   let nextId = Math.max(...initialCoffees.map((c) => c.id)) + 1;
 
   const self: Context.Tag.Service<typeof CoffeeService> = {
-    list: () => Ref.get(coffeeRef).pipe(Effect.withSpan("coffee.service.list")),
+    list: ({ name }: { name?: string } = {}) =>
+      Ref.get(coffeeRef).pipe(
+        Effect.map((coffees) =>
+          name
+            ? coffees.filter((c) =>
+                c.name.toLowerCase().includes(name.toLowerCase())
+              )
+            : coffees
+        ),
+        Effect.withSpan("coffee.service.list", {
+          attributes: name ? { "coffee.filter.name": name } : {},
+        })
+      ),
 
     generateSuggestion: (name: string) =>
       Effect.gen(function* () {
-        const coffees = yield* self.list();
+        const coffees = yield* self.list({});
         let suggestion = name;
         let counter = 2;
         while (
@@ -138,25 +151,19 @@ export const CoffeeServiceLive = Effect.gen(function* () {
       inStock: boolean;
     }) =>
       Effect.gen(function* () {
-        const coffees = yield* self.list();
+        const coffeeWithNameExists =
+          (yield* self.list({ name: coffeeData.name })).length > 0;
 
-        // Check if coffee with this name already exists
-        const existingCoffee = coffees.find(
-          (c) => c.name.toLowerCase() === coffeeData.name.toLowerCase()
-        );
-
-        if (existingCoffee) {
-          const suggestion = yield* self.generateSuggestion(coffeeData.name);
-
+        if (coffeeWithNameExists) {
           yield* Effect.fail(
             new CoffeeAlreadyExists({
               name: coffeeData.name,
-              suggestion,
+              suggestion: yield* self.generateSuggestion(coffeeData.name),
             })
           );
         }
 
-        const coffee = new Coffee({
+        const newCoffee = new Coffee({
           id: nextId++,
           name: coffeeData.name,
           origin: coffeeData.origin,
@@ -167,8 +174,10 @@ export const CoffeeServiceLive = Effect.gen(function* () {
           inStock: coffeeData.inStock,
         });
 
-        yield* Ref.set(coffeeRef, [...coffees, coffee]);
-        return coffee;
+        // simulates adding to database
+        yield* Ref.set(coffeeRef, [...(yield* Ref.get(coffeeRef)), newCoffee]);
+
+        return newCoffee;
       }).pipe(
         Effect.withSpan("coffee.service.create", {
           attributes: {
@@ -196,7 +205,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
       }
     ) =>
       Effect.gen(function* () {
-        const coffees = yield* self.list();
+        const coffees = yield* self.list({});
 
         const coffeeIndex = coffees.findIndex((c) => c.id === id);
 
@@ -237,7 +246,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
 
     delete: (id: number) =>
       Effect.gen(function* () {
-        const coffees = yield* self.list();
+        const coffees = yield* self.list({});
 
         const coffeeExists = coffees.some((c) => c.id === id);
 
