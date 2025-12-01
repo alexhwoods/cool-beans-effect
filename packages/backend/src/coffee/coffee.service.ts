@@ -11,6 +11,7 @@ export class CoffeeService extends Context.Tag("CoffeeService")<
   CoffeeService,
   {
     readonly listCoffees: () => Effect.Effect<Coffee[]>;
+    readonly generateSuggestion: (name: string) => Effect.Effect<string>;
     readonly createCoffee: (
       request: CreateCoffeeRequest
     ) => Effect.Effect<Coffee, CoffeeAlreadyExists>;
@@ -91,26 +92,31 @@ export const CoffeeServiceLive = Effect.gen(function* () {
   const coffeeRef = yield* Ref.make(initialCoffees);
   let nextId = Math.max(...initialCoffees.map((c) => c.id)) + 1;
 
-  // Helper function for generating suggestions
-  const generateSuggestion = (name: string, coffees: Coffee[]): string => {
-    let suggestion = name;
-    let counter = 2;
-    while (
-      coffees.some((c) => c.name.toLowerCase() === suggestion.toLowerCase())
-    ) {
-      suggestion = `${name} ${counter}`;
-      counter++;
-    }
-    return suggestion;
-  };
-
-  return CoffeeService.of({
+  const self: Context.Tag.Service<typeof CoffeeService> = {
     listCoffees: () =>
       Ref.get(coffeeRef).pipe(Effect.withSpan("coffee.service.listCoffees")),
 
+    generateSuggestion: (name: string) =>
+      Effect.gen(function* () {
+        const coffees = yield* self.listCoffees();
+        let suggestion = name;
+        let counter = 2;
+        while (
+          coffees.some((c) => c.name.toLowerCase() === suggestion.toLowerCase())
+        ) {
+          suggestion = `${name} ${counter}`;
+          counter++;
+        }
+        return suggestion;
+      }).pipe(
+        Effect.withSpan("coffee.service.generateSuggestion", {
+          attributes: { "coffee.name": name },
+        })
+      ),
+
     createCoffee: (request: CreateCoffeeRequest) =>
       Effect.gen(function* () {
-        const coffees = yield* Ref.get(coffeeRef);
+        const coffees = yield* self.listCoffees();
 
         // Check if coffee with this name already exists
         const existingCoffee = coffees.find(
@@ -118,7 +124,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         );
 
         if (existingCoffee) {
-          const suggestion = generateSuggestion(request.name, coffees);
+          const suggestion = yield* self.generateSuggestion(request.name);
 
           yield* Effect.fail(
             new CoffeeAlreadyExists({
@@ -154,7 +160,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
 
     updateCoffee: (request: UpdateCoffeeRequest) =>
       Effect.gen(function* () {
-        const coffees = yield* Ref.get(coffeeRef);
+        const coffees = yield* self.listCoffees();
 
         const coffeeIndex = coffees.findIndex((c) => c.id === request.id);
 
@@ -189,7 +195,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
 
     deleteCoffee: (id: number) =>
       Effect.gen(function* () {
-        const coffees = yield* Ref.get(coffeeRef);
+        const coffees = yield* self.listCoffees();
 
         const coffeeExists = coffees.some((c) => c.id === id);
 
@@ -204,5 +210,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
           attributes: { "coffee.id": id },
         })
       ),
-  });
+  };
+
+  return self;
 }).pipe(Layer.effect(CoffeeService));
