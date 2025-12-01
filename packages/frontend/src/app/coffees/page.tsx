@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Navigation, NavigationLink } from "@/components/ui/navigation";
 import {
   Table,
@@ -25,10 +19,7 @@ import { Effect, Layer, Match } from "effect";
 import {
   Coffee,
   CreateCoffeeRequest,
-  UpdateCoffeeRequest,
   DeleteCoffeeRequest,
-  CoffeeNotFound,
-  CoffeeAlreadyExists,
 } from "@cool-beans/shared";
 import { makeRpcClient, ProtocolLive } from "@/rpc-client";
 
