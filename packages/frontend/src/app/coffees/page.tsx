@@ -61,14 +61,9 @@ export default function CoffeesPage() {
       )
     );
 
-    try {
-      const result = await Effect.runPromise(loadCoffeesEffect);
-      setCoffees([...result]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load coffees");
-    } finally {
-      setLoading(false);
-    }
+    const result = await Effect.runPromise(loadCoffeesEffect);
+    setCoffees([...result]);
+    setLoading(false);
   };
 
   const handleCoffeeCreated = (coffee: Coffee) => {
@@ -98,7 +93,7 @@ export default function CoffeesPage() {
   const handleDelete = async (id: number) => {
     const request: DeleteCoffeeRequest = { id };
 
-    const program = Effect.gen(function* () {
+    const deleteCoffeeEffect = Effect.gen(function* () {
       const client = yield* makeRpcClient();
       return yield* client.deleteCoffee(request);
     }).pipe(
@@ -112,13 +107,9 @@ export default function CoffeesPage() {
       )
     );
 
-    try {
-      const success = await Effect.runPromise(program);
-      if (success !== false) {
-        setCoffees(coffees.filter((c) => c.id !== id));
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete coffee");
+    const success = await Effect.runPromise(deleteCoffeeEffect);
+    if (success !== false) {
+      setCoffees(coffees.filter((c) => c.id !== id));
     }
   };
 
@@ -148,18 +139,18 @@ export default function CoffeesPage() {
             return null;
           });
         },
-      })
+      }),
+      Effect.catchAll((err) =>
+        Effect.sync(() => {
+          setError(String(err));
+          return null;
+        })
+      )
     );
 
-    try {
-      const createdCoffee = await Effect.runPromise(createCoffeeEffect);
-      if (createdCoffee) {
-        handleCoffeeCreated(createdCoffee);
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create random coffee"
-      );
+    const createdCoffee = await Effect.runPromise(createCoffeeEffect);
+    if (createdCoffee) {
+      handleCoffeeCreated(createdCoffee);
     }
   };
 
