@@ -1,6 +1,6 @@
 import { describe, expect } from "bun:test";
 import { test } from "../test-utils/bun-test";
-import { Effect, Either } from "effect";
+import { Effect, Either, Ref } from "effect";
 import { CoffeeService, CoffeeServiceLive } from "./coffee.service";
 import { CreateCoffeeRequest, CoffeeNotFound } from "@cool-beans/shared";
 
@@ -292,6 +292,79 @@ describe("CoffeeService", () => {
         expect(coffee.description).not.toBe(originalCoffee.description);
         expect(coffee.inStock).not.toBe(originalCoffee.inStock);
       }
+    }).pipe(Effect.provide(CoffeeServiceLive))
+  );
+
+  test.effect("can delete a coffee", () =>
+    Effect.gen(function* () {
+      // Arrange
+      const coffeeService = yield* CoffeeService;
+
+      // Act
+      const result = yield* Effect.either(coffeeService.delete(4));
+
+      // Assert
+      expect(Either.isRight(result)).toBe(true);
+      if (Either.isRight(result)) {
+        expect(result.right).toBeUndefined();
+      }
+    }).pipe(Effect.provide(CoffeeServiceLive))
+  );
+
+  test.effect("delete removes the coffee from the list", () =>
+    Effect.gen(function* () {
+      // Arrange
+      const coffeeService = yield* CoffeeService;
+      const coffeeToDelete = (yield* coffeeService.list({ id: 5 }))[0];
+      expect(coffeeToDelete).toBeDefined();
+
+      // Act
+      yield* coffeeService.delete(5);
+      const coffees = yield* coffeeService.list({ id: 5 });
+
+      // Assert
+      expect(coffees.length).toBe(0);
+    }).pipe(Effect.provide(CoffeeServiceLive))
+  );
+
+  test.effect("delete returns CoffeeNotFound when coffee doesn't exist", () =>
+    Effect.gen(function* () {
+      // Arrange
+      const coffeeService = yield* CoffeeService;
+
+      // Act
+      const result = yield* Effect.either(coffeeService.delete(99999));
+
+      // Assert
+      expect(Either.isLeft(result)).toBe(true);
+      if (Either.isLeft(result)) {
+        expect(result.left).toBeInstanceOf(CoffeeNotFound);
+        if (result.left instanceof CoffeeNotFound) {
+          expect(result.left.id).toBe(99999);
+        }
+      }
+    }).pipe(Effect.provide(CoffeeServiceLive))
+  );
+
+  test.effect("delete only removes the specified coffee", () =>
+    Effect.gen(function* () {
+      // Arrange
+      const coffeeService = yield* CoffeeService;
+      const allCoffeesBefore = yield* coffeeService.list({});
+      const coffeeToDelete = allCoffeesBefore.find((c) => c.id === 6);
+      expect(coffeeToDelete).toBeDefined();
+
+      // Act
+      yield* coffeeService.delete(6);
+      const allCoffeesAfter = yield* coffeeService.list({});
+      const deletedCoffee = allCoffeesAfter.find((c) => c.id === 6);
+
+      // Assert
+      expect(deletedCoffee).toBeUndefined();
+      expect(allCoffeesAfter.length).toBe(allCoffeesBefore.length - 1);
+      // Verify other coffees are still present
+      const otherCoffee = allCoffeesAfter.find((c) => c.id === 1);
+      expect(otherCoffee).toBeDefined();
     }).pipe(Effect.provide(CoffeeServiceLive))
   );
 });

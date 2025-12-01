@@ -2,7 +2,8 @@ import { Context, Effect, Layer, Ref } from "effect";
 import {
   Coffee,
   CoffeeNotFound,
-  // Is it right to throw these errors at the service level and have no mapping?
+  // Is it right to throw these errors at the service level and have no mapping? 🤔
+  // I think so, you can call these "business errors"
   CoffeeAlreadyExists,
 } from "@cool-beans/shared";
 
@@ -244,16 +245,7 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         return coffee;
       }).pipe(
         Effect.withSpan("coffee.service.update", {
-          attributes: {
-            "coffee.id": id,
-            "coffee.name": coffeeData.name,
-            "coffee.origin": coffeeData.origin,
-            "coffee.roast": coffeeData.roast,
-            "coffee.price": coffeeData.price,
-            "coffee.weight": coffeeData.weight,
-            "coffee.description": coffeeData.description,
-            "coffee.inStock": coffeeData.inStock,
-          },
+          attributes: { id, coffeeData },
         })
       ),
 
@@ -262,13 +254,14 @@ export const CoffeeServiceLive = Effect.gen(function* () {
         const coffees = yield* self.list({});
 
         const coffeeExists = coffees.some((c) => c.id === id);
-
         if (!coffeeExists) {
           yield* Effect.fail(new CoffeeNotFound({ id }));
         }
 
-        const filteredCoffees = coffees.filter((c) => c.id !== id);
-        yield* Ref.set(coffeeRef, filteredCoffees);
+        yield* Ref.set(
+          coffeeRef,
+          coffees.filter((c) => c.id !== id)
+        );
       }).pipe(
         Effect.withSpan("coffee.service.delete", {
           attributes: { "coffee.id": id },
