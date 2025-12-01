@@ -124,23 +124,23 @@ export default function CoffeesPage() {
 
     const createCoffeeEffect = Effect.gen(function* () {
       const client = yield* makeRpcClient();
-      return yield* client.createCoffee(request);
+      // Handle CoffeeAlreadyExists right where it's thrown
+      return yield* client.createCoffee(request).pipe(
+        Effect.catchTags({
+          CoffeeAlreadyExists: (err) =>
+            Effect.sync(() => {
+              handleDuplicateCoffee({
+                attemptedName: err.name,
+                suggestion: err.suggestion || `${request.name} 2`,
+                coffeeData: request,
+              });
+              return null;
+            }),
+        })
+      );
     }).pipe(
       Effect.scoped,
       Effect.provide(ProtocolLive),
-      Effect.catchTags({
-        CoffeeAlreadyExists: (err) => {
-          return Effect.sync(() => {
-            // Prompt the user with the suggestion
-            handleDuplicateCoffee({
-              attemptedName: err.name,
-              suggestion: err.suggestion || `${request.name} 2`,
-              coffeeData: request,
-            });
-            return null;
-          });
-        },
-      }),
       Effect.catchAll((err) =>
         Effect.sync(() => {
           setError(String(err));
