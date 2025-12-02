@@ -1,4 +1,4 @@
-# Collector - Bun Monorepo with Effect & Effect RPC
+# Cool Beans - Bun Monorepo with Effect & Effect RPC
 
 A Bun monorepo showcasing Effect and Effect RPC for type-safe communication between frontend and backend.
 
